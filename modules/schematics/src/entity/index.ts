@@ -58,10 +58,10 @@ export default function (options: EntityOptions): Rule {
       move(parsedPath.path),
     ]);
 
-    const templateSource = apply(
-      url(options.creators ? './creator-files' : './files'),
-      [applyTemplates(templateOptions), move(parsedPath.path)]
-    );
+    const templateSource = apply(url('./files'), [
+      applyTemplates(templateOptions),
+      move(parsedPath.path),
+    ]);
 
     return chain([
       addReducerToState({ ...options, plural: true }),

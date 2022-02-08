@@ -59,10 +59,10 @@ export default function (options: ReducerOptions): Rule {
       move(parsedPath.path),
     ]);
 
-    const templateSource = apply(
-      url(options.creators ? './creator-files' : './files'),
-      [applyTemplates(templateOptions), move(parsedPath.path)]
-    );
+    const templateSource = apply(url('./files'), [
+      applyTemplates(templateOptions),
+      move(parsedPath.path),
+    ]);
 
     return chain([
       branchAndMerge(chain([addReducerToState(options)])),
