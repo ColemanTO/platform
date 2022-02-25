@@ -75,7 +75,7 @@ module.exports = new Package('angular-api', [basePackage, typeScriptPackage])
     readTypeScriptModules.ignoreExportsMatching = [/^[_ɵ]|^VERSION$/];
     readTypeScriptModules.hidePrivateMembers = true;
 
-    // NOTE: This list shold be in sync with tools/public_api_guard/BUILD.bazel
+    // NOTE: This list should be in sync with tools/public_api_guard/BUILD.bazel
     readTypeScriptModules.sourceFiles = [
       'store/index.ts',
       'store/testing/index.ts',
@@ -85,7 +85,9 @@ module.exports = new Package('angular-api', [basePackage, typeScriptPackage])
       'entity/index.ts',
       'router-store/index.ts',
       'data/index.ts',
-      'schematics/index.ts'
+      'schematics/index.ts',
+      'component-store/index.ts',
+      'component/index.ts',
     ];
 
     readFilesProcessor.fileReaders.push(packageContentFileReader);
@@ -174,7 +176,7 @@ module.exports = new Package('angular-api', [basePackage, typeScriptPackage])
 
   .config(function(convertToJsonProcessor, postProcessHtml, API_DOC_TYPES_TO_RENDER, API_DOC_TYPES, autoLinkCode) {
     convertToJsonProcessor.docTypes = convertToJsonProcessor.docTypes.concat(API_DOC_TYPES_TO_RENDER);
-    postProcessHtml.docTypes = convertToJsonProcessor.docTypes.concat(API_DOC_TYPES_TO_RENDER);
+    postProcessHtml.docTypes = postProcessHtml.docTypes.concat(API_DOC_TYPES_TO_RENDER);
     autoLinkCode.docTypes = API_DOC_TYPES;
     autoLinkCode.codeElements = ['code', 'code-example', 'code-pane'];
   });

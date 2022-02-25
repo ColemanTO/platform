@@ -1,8 +1,10 @@
+/.angular/cache
 # Logs
 logs
 *.log
 .nyc
 .nyc_output
+.history
 
 # Runtime data
 pids
@@ -60,6 +62,7 @@ __build__/**
 release
 dist
 bazel-out
+bazel-bin
 /node_modules/
 lerna-debug.log
 /lib/

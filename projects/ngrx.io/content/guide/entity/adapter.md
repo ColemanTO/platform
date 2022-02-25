@@ -6,7 +6,7 @@ A method for returning a generic entity adapter for a single entity state collec
 returned adapter provides many adapter methods for performing operations
 against the collection type. The method takes an object with 2 properties for configuration.
 
-- `selectId`: A `method` for selecting the primary id for the collection. Optional when the entity has a primary key of `id`
+- `selectId`: A method for selecting the primary id for the collection. Optional when the entity has a primary key of `id`
 - `sortComparer`: A compare function used to [sort](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort) the collection. The comparer function is only needed if the collection needs to be sorted before being displayed. Set to `false` to leave the collection unsorted, which is more performant during CRUD operations.
 
 Usage:
@@ -21,7 +21,7 @@ export interface User {
 
 export interface State extends EntityState&lt;User&gt; {
   // additional entities state properties
-  selectedUserId: number;
+  selectedUserId: string | null;
 }
 
 export function selectUserId(a: User): string {
@@ -62,7 +62,7 @@ export interface User {
 
 export interface State extends EntityState&lt;User&gt; {
   // additional entities state properties
-  selectedUserId: number | null;
+  selectedUserId: string | null;
 }
 
 export const initialState: State = adapter.getInitialState({
@@ -70,11 +70,7 @@ export const initialState: State = adapter.getInitialState({
   selectedUserId: null,
 });
 
-const userReducer = createReducer(initialState);
-
-export function reducer(state: State | undefined, action: Action) {
-  return userReducer(state, action);
-}
+export const userReducer = createReducer(initialState);
 </code-example>
 
 ## Adapter Collection Methods
@@ -83,17 +79,20 @@ The entity adapter also provides methods for operations against an entity. These
 one to many records at a time. Each method returns the newly modified state if changes were made and the same
 state if no changes were made.
 
-- `addOne`: Add one entity to the collection
-- `addMany`: Add multiple entities to the collection
-- `addAll`: Replace current collection with provided collection
-- `removeOne`: Remove one entity from the collection
-- `removeMany`: Remove multiple entities from the collection, by id or by predicate
-- `removeAll`: Clear entity collection
-- `updateOne`: Update one entity in the collection
-- `updateMany`: Update multiple entities in the collection
-- `upsertOne`: Add or Update one entity in the collection
-- `upsertMany`: Add or Update multiple entities in the collection
-- `map`: Update multiple entities in the collection by defining a map function, similar to [Array.map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map)
+- `addOne`: Add one entity to the collection.
+- `addMany`: Add multiple entities to the collection.
+- `setAll`: Replace current collection with provided collection.
+- `setOne`: Add or Replace one entity in the collection.
+- `setMany`: Add or Replace multiple entities in the collection.
+- `removeOne`: Remove one entity from the collection.
+- `removeMany`: Remove multiple entities from the collection, by id or by predicate.
+- `removeAll`: Clear entity collection.
+- `updateOne`: Update one entity in the collection. Supports partial updates.
+- `updateMany`: Update multiple entities in the collection. Supports partial updates.
+- `upsertOne`: Add or Update one entity in the collection.
+- `upsertMany`: Add or Update multiple entities in the collection.
+- `mapOne`: Update one entity in the collection by defining a map function.
+- `map`: Update multiple entities in the collection by defining a map function, similar to [Array.map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map).
 
 Usage:
 
@@ -106,17 +105,20 @@ export interface User {
 
 <code-example header="user.actions.ts">
 import { createAction, props } from '@ngrx/store';
-import { Update } from '@ngrx/entity';
+import { Update, EntityMap, EntityMapOne, Predicate } from '@ngrx/entity';
 
 import { User } from '../models/user.model';
 
 export const loadUsers = createAction('[User/API] Load Users', props<{ users: User[] }>());
+export const setUsers = createAction('[User/API] Set Users', props<{ users: User[] }>());
 export const addUser = createAction('[User/API] Add User', props<{ user: User }>());
+export const setUser = createAction('[User/API] Set User', props<{ user: User }>());
 export const upsertUser = createAction('[User/API] Upsert User', props<{ user: User }>());
 export const addUsers = createAction('[User/API] Add Users', props<{ users: User[] }>());
 export const upsertUsers = createAction('[User/API] Upsert Users', props<{ users: User[] }>());
-export const updateUser = createAction('[User/API] Update User', props<{ user: Update&lt;User&gt; }>());
-export const updateUsers = createAction('[User/API] Update Users', props<{ users: Update&lt;User&gt;[] }>());
+export const updateUser = createAction('[User/API] Update User', props<{ update: Update&lt;User&gt; }>());
+export const updateUsers = createAction('[User/API] Update Users', props<{ updates: Update&lt;User&gt;[] }>());
+export const mapUser = createAction('[User/API] Map User', props<{ entityMap: EntityMapOne&lt;User&gt; }>());
 export const mapUsers = createAction('[User/API] Map Users', props<{ entityMap: EntityMap&lt;User&gt; }>());
 export const deleteUser = createAction('[User/API] Delete User', props<{ id: string }>());
 export const deleteUsers = createAction('[User/API] Delete Users', props<{ ids: string[] }>());
@@ -133,7 +135,7 @@ import * as UserActions from '../actions/user.actions';
 
 export interface State extends EntityState&lt;User&gt; {
   // additional entities state properties
-  selectedUserId: number | null;
+  selectedUserId: string | null;
 }
 
 export const adapter: EntityAdapter&lt;User&gt; = createEntityAdapter&lt;User&gt;();
@@ -143,10 +145,13 @@ export const initialState: State = adapter.getInitialState({
   selectedUserId: null,
 });
 
-const userReducer = createReducer(
+export const userReducer = createReducer(
   initialState,
   on(UserActions.addUser, (state, { user }) => {
     return adapter.addOne(user, state)
+  }),
+  on(UserActions.setUser, (state, { user }) => {
+    return adapter.setOne(user, state)
   }),
   on(UserActions.upsertUser, (state, { user }) => {
     return adapter.upsertOne(user, state);
@@ -155,13 +160,16 @@ const userReducer = createReducer(
     return adapter.addMany(users, state);
   }),
   on(UserActions.upsertUsers, (state, { users }) => {
-    return adapter.upsertUsers(users, state);
+    return adapter.upsertMany(users, state);
   }),
-  on(UserActions.updateUser, (state, { user }) => {
-    return adapter.updateOne(user, state);
+  on(UserActions.updateUser, (state, { update }) => {
+    return adapter.updateOne(update, state);
   }),
-  on(UserActions.updateUsers, (state, { users }) => {
-    return adapter.updateMany(users, state);
+  on(UserActions.updateUsers, (state, { updates }) => {
+    return adapter.updateMany(updates, state);
+  }),
+  on(UserActions.mapUser, (state, { entityMap }) => {
+    return adapter.mapOne(entityMap, state);
   }),
   on(UserActions.mapUsers, (state, { entityMap }) => {
     return adapter.map(entityMap, state);
@@ -176,16 +184,16 @@ const userReducer = createReducer(
     return adapter.removeMany(predicate, state);
   }),
   on(UserActions.loadUsers, (state, { users }) => {
-    return adapter.addAll(users, state);
+    return adapter.setAll(users, state);
+  }),
+  on(UserActions.setUsers, (state, { users }) => {
+    return adapter.setMany(users, state);
   }),
   on(UserActions.clearUsers, state => {
     return adapter.removeAll({ ...state, selectedUserId: null });
   })
 );
 
-export function reducer(state: State | undefined, action: Action) {
-  return userReducer(state, action);
-}
 
 export const getSelectedUserId = (state: State) => state.selectedUserId;
 
@@ -209,6 +217,28 @@ export const selectAllUsers = selectAll;
 // select the total user count
 export const selectUserTotal = selectTotal;
 </code-example>
+
+### Entity Updates
+
+There are a few caveats to be aware of when updating entities using the entity adapter. 
+
+The first is that `updateOne` and `updateMany` make use of the `Update<T>` interface shown below. This supports partial updates.
+
+```typescript
+interface UpdateStr<T> {
+  id: string;
+  changes: Partial<T>;
+}
+
+interface UpdateNum<T> {
+  id: number;
+  changes: Partial<T>;
+}
+
+type Update<T> = UpdateStr<T> | UpdateNum<T>;
+```
+
+Secondly, `upsertOne` and `upsertMany` will perform an insert or update. These methods do not support partial updates.
 
 ### Entity Selectors
 
@@ -238,7 +268,7 @@ export const selectUserState = createFeatureSelector&lt;fromUser.State&gt;('user
 
 export const selectUserIds = createSelector(
   selectUserState,
-  fromUser.selectUserIds
+  fromUser.selectUserIds // shorthand for usersState => fromUser.selectUserIds(usersState)
 );
 export const selectUserEntities = createSelector(
   selectUserState,
@@ -260,6 +290,6 @@ export const selectCurrentUserId = createSelector(
 export const selectCurrentUser = createSelector(
   selectUserEntities,
   selectCurrentUserId,
-  (userEntities, userId) => userEntities[userId]
+  (userEntities, userId) => userId && userEntities[userId]
 );
 </code-example>

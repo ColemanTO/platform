@@ -1,26 +1,33 @@
 import * as ts from 'typescript';
+import { Path } from '@angular-devkit/core';
 import {
+  apply,
+  applyTemplates,
+  chain,
+  mergeWith,
+  move,
+  noop,
   Rule,
   SchematicContext,
-  Tree,
-  chain,
-  noop,
   SchematicsException,
+  Tree,
+  url,
 } from '@angular-devkit/schematics';
 import { NodePackageInstallTask } from '@angular-devkit/schematics/tasks';
 import {
-  addPackageToPackageJson,
-  platformVersion,
-  findModuleFromOptions,
-  insertImport,
-  InsertChange,
-  getProjectPath,
-  parseName,
   addImportToModule,
+  addPackageToPackageJson,
+  commitChanges,
   createReplaceChange,
+  findModuleFromOptions,
+  getProjectPath,
+  insertImport,
+  parseName,
+  platformVersion,
   ReplaceChange,
-  createChangeRecorder,
-} from '@ngrx/data/schematics-core';
+  stringUtils,
+  visitTSSourceFiles,
+} from '../../schematics-core';
 import { Schema as EntityDataOptions } from './schema';
 
 function addNgRxDataToPackageJson() {
@@ -53,6 +60,7 @@ function addEntityDataToNgModule(options: EntityDataOptions): Rule {
     const moduleToImport = options.effects
       ? 'EntityDataModule'
       : 'EntityDataModuleWithoutEffects';
+
     const effectsModuleImport = insertImport(
       source,
       modulePath,
@@ -63,18 +71,25 @@ function addEntityDataToNgModule(options: EntityDataOptions): Rule {
     const [dateEntityNgModuleImport] = addImportToModule(
       source,
       modulePath,
-      moduleToImport,
+      options.entityConfig
+        ? [moduleToImport, 'forRoot(entityConfig)'].join('.')
+        : moduleToImport,
       ''
     );
 
     const changes = [effectsModuleImport, dateEntityNgModuleImport];
-    const recorder = host.beginUpdate(modulePath);
-    for (const change of changes) {
-      if (change instanceof InsertChange) {
-        recorder.insertLeft(change.pos, change.toAdd);
-      }
+
+    if (options.entityConfig) {
+      const entityConfigImport = insertImport(
+        source,
+        modulePath,
+        'entityConfig',
+        './entity-metadata'
+      );
+      changes.push(entityConfigImport);
     }
-    host.commitUpdate(recorder);
+
+    commitChanges(host, source.fileName, changes);
 
     return host;
   };
@@ -103,23 +118,9 @@ function removeAngularNgRxDataFromPackageJson() {
   };
 }
 
-function renameNgrxDataModule(options: EntityDataOptions) {
-  return (host: Tree, context: SchematicContext) => {
-    host.visit(path => {
-      if (!path.endsWith('.ts')) {
-        return;
-      }
-
-      const sourceFile = ts.createSourceFile(
-        path,
-        host.read(path)!.toString(),
-        ts.ScriptTarget.Latest
-      );
-
-      if (sourceFile.isDeclarationFile) {
-        return;
-      }
-
+function renameNgrxDataModule() {
+  return (host: Tree) => {
+    visitTSSourceFiles(host, (sourceFile) => {
       const ngrxDataImports = sourceFile.statements
         .filter(ts.isImportDeclaration)
         .filter(
@@ -137,12 +138,7 @@ function renameNgrxDataModule(options: EntityDataOptions) {
         ...findNgrxDataReplacements(sourceFile),
       ];
 
-      if (changes.length === 0) {
-        return;
-      }
-
-      const recorder = createChangeRecorder(host, path, changes);
-      host.commitUpdate(recorder);
+      commitChanges(host, sourceFile.fileName, changes);
     });
   };
 }
@@ -151,7 +147,7 @@ function findNgrxDataImports(
   sourceFile: ts.SourceFile,
   imports: ts.ImportDeclaration[]
 ) {
-  const changes = imports.map(specifier =>
+  const changes = imports.map((specifier) =>
     createReplaceChange(
       sourceFile,
       specifier.moduleSpecifier,
@@ -168,9 +164,9 @@ function findNgrxDataImportDeclarations(
   imports: ts.ImportDeclaration[]
 ) {
   const changes = imports
-    .map(p => (p.importClause!.namedBindings! as ts.NamedImports).elements)
+    .map((p) => (p.importClause!.namedBindings! as ts.NamedImports).elements)
     .reduce((imports, curr) => imports.concat(curr), [] as ts.ImportSpecifier[])
-    .map(specifier => {
+    .map((specifier) => {
       if (!ts.isImportSpecifier(specifier)) {
         return { hit: false };
       }
@@ -205,8 +201,8 @@ function findNgrxDataImportDeclarations(
 
 function findNgrxDataReplacements(sourceFile: ts.SourceFile) {
   const renameKeys = Object.keys(renames);
-  let changes: ReplaceChange[] = [];
-  ts.forEachChild(sourceFile, node => find(node, changes));
+  const changes: ReplaceChange[] = [];
+  ts.forEachChild(sourceFile, (node) => find(node, changes));
   return changes;
 
   function find(node: ts.Node, changes: ReplaceChange[]) {
@@ -254,7 +250,7 @@ function findNgrxDataReplacements(sourceFile: ts.SourceFile) {
       );
     }
 
-    ts.forEachChild(node, childNode => find(childNode, changes));
+    ts.forEachChild(node, (childNode) => find(childNode, changes));
   }
 }
 
@@ -273,7 +269,19 @@ function throwIfModuleNotSpecified(host: Tree, module?: string) {
   }
 }
 
-export default function(options: EntityDataOptions): Rule {
+function createEntityConfigFile(options: EntityDataOptions, path: Path) {
+  return mergeWith(
+    apply(url('./files'), [
+      applyTemplates({
+        ...stringUtils,
+        ...options,
+      }),
+      move(path),
+    ])
+  );
+}
+
+export default function (options: EntityDataOptions): Rule {
   return (host: Tree, context: SchematicContext) => {
     (options as any).name = '';
     options.path = getProjectPath(host, options);
@@ -290,9 +298,12 @@ export default function(options: EntityDataOptions): Rule {
       options.migrateNgrxData
         ? chain([
             removeAngularNgRxDataFromPackageJson(),
-            renameNgrxDataModule(options),
+            renameNgrxDataModule(),
           ])
         : addEntityDataToNgModule(options),
+      options.entityConfig
+        ? createEntityConfigFile(options, parsedPath.path)
+        : noop(),
     ])(host, context);
   };
 }

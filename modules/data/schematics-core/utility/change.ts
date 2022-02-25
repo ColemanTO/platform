@@ -61,7 +61,7 @@ export class InsertChange implements Change {
    * This method does not insert spaces if there is none in the original string.
    */
   apply(host: Host) {
-    return host.read(this.path).then(content => {
+    return host.read(this.path).then((content) => {
       const prefix = content.substring(0, this.pos);
       const suffix = content.substring(this.pos);
 
@@ -86,7 +86,7 @@ export class RemoveChange implements Change {
   }
 
   apply(host: Host): Promise<void> {
-    return host.read(this.path).then(content => {
+    return host.read(this.path).then((content) => {
       const prefix = content.substring(0, this.pos);
       const suffix = content.substring(this.end);
 
@@ -117,7 +117,7 @@ export class ReplaceChange implements Change {
   }
 
   apply(host: Host): Promise<void> {
-    return host.read(this.path).then(content => {
+    return host.read(this.path).then((content) => {
       const prefix = content.substring(0, this.pos);
       const suffix = content.substring(this.pos + this.oldText.length);
       const text = content.substring(this.pos, this.pos + this.oldText.length);
@@ -146,6 +146,15 @@ export function createReplaceChange(
     oldText,
     newText
   );
+}
+
+export function createRemoveChange(
+  sourceFile: ts.SourceFile,
+  node: ts.Node,
+  from = node.getStart(sourceFile),
+  to = node.getEnd()
+): RemoveChange {
+  return new RemoveChange(sourceFile.fileName, from, to);
 }
 
 export function createChangeRecorder(

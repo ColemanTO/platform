@@ -7,7 +7,6 @@ export const defaultWorkspaceOptions = {
   name: 'workspace',
   newProjectRoot: 'projects',
   version: '6.0.0',
-  defaultProject: 'bar',
 };
 
 export const defaultAppOptions = {
@@ -18,13 +17,6 @@ export const defaultAppOptions = {
   routing: false,
   style: 'css',
   skipTests: false,
-};
-
-const defaultModuleOptions = {
-  name: 'foo',
-  spec: true,
-  module: undefined,
-  flat: false,
 };
 
 const defaultLibOptions = {

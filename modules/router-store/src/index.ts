@@ -15,6 +15,11 @@ export {
   RouterNavigationPayload,
   RouterRequestAction,
   RouterRequestPayload,
+  routerCancelAction,
+  routerErrorAction,
+  routerNavigatedAction,
+  routerNavigationAction,
+  routerRequestAction,
 } from './actions';
 export { routerReducer, RouterReducerState } from './reducer';
 export {
@@ -39,4 +44,4 @@ export {
   MinimalRouterStateSnapshot,
   MinimalRouterStateSerializer,
 } from './serializers/minimal_serializer';
-export { getSelectors } from './router_selectors';
+export { getSelectors, createRouterSelector } from './router_selectors';

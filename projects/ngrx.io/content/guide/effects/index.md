@@ -60,10 +60,10 @@ export class MoviesService {
 The component has multiple responsibilities:
 
 - Managing the _state_ of the movies.
-- Using the service to perform a _side effect_, reaching out to an external API to fetch the movies
+- Using the service to perform a _side effect_, reaching out to an external API to fetch the movies.
 - Changing the _state_ of the movies within the component.
 
-`Effects` when used along with `Store`, decrease the responsibility of the component.  In a larger application, this becomes more important because you have multiple sources of data, with multiple services required to fetch those pieces of data, and services potentially relying on other services.
+`Effects` when used along with `Store`, decrease the responsibility of the component. In a larger application, this becomes more important because you have multiple sources of data, with multiple services required to fetch those pieces of data, and services potentially relying on other services.
 
 Effects handle external data and interactions, allowing your services to be less stateful and only perform tasks related to external interactions. Next, refactor the component to put the shared movie data in the `Store`. Effects handle the fetching of movie data.
 
@@ -76,7 +76,7 @@ Effects handle external data and interactions, allowing your services to be less
   `
 })
 export class MoviesPageComponent {
-  movies$: Observable<Movie[]> = this.store.select(state => state.movies);
+  movies$: Observable&lt;Movie[]&gt; = this.store.select(state => state.movies);
 
   constructor(private store: Store&lt;{ movies: Movie[] }&gt;) {}
 
@@ -104,7 +104,7 @@ To show how you handle loading movies from the example above, let's look at `Mov
 
 <code-example header="movie.effects.ts">
 import { Injectable } from '@angular/core';
-import { Actions, Effect, ofType } from '@ngrx/effects';
+import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { EMPTY } from 'rxjs';
 import { map, mergeMap, catchError } from 'rxjs/operators';
 import { MoviesService } from './movies.service';
@@ -129,7 +129,7 @@ export class MovieEffects {
 }
 </code-example>
 
-The `loadMovies$` effect is listening for all dispatched actions through the `Actions` stream, but is only interested in the `[Movies Page] Load Movies` event using the `ofType` operator. The stream of actions is then flattened and mapped into a new observable using the `mergeMap` operator. The `MoviesService#getAll()` method returns an observable that maps the movies to a new action on success, and currently returns an empty observable if an error occurs. The action is dispatched to the `Store` where it can be handled by reducers when a state change is needed. Its also important to [handle errors](#handling-errors) when dealing with observable streams so that the effects continue running.
+The `loadMovies$` effect is listening for all dispatched actions through the `Actions` stream, but is only interested in the `[Movies Page] Load Movies` event using the `ofType` operator. The stream of actions is then flattened and mapped into a new observable using the `mergeMap` operator. The `MoviesService#getAll()` method returns an observable that maps the movies to a new action on success, and currently returns an empty observable if an error occurs. The action is dispatched to the `Store` where it can be handled by reducers when a state change is needed. It's also important to [handle errors](#handling-errors) when dealing with observable streams so that the effects continue running.
 
 <div class="alert is-important">
 
@@ -150,7 +150,7 @@ Effects are built on top of observable streams provided by RxJS. Effects are lis
 
 <code-example header="movie.effects.ts">
 import { Injectable } from '@angular/core';
-import { Actions, Effect, ofType } from '@ngrx/effects';
+import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { map, mergeMap, catchError } from 'rxjs/operators';
 import { MoviesService } from './movies.service';
@@ -225,6 +225,27 @@ export class MovieModule {}
 
 </div>
 
+## Alternative way of registering effects
+
+You can provide root-/feature-level effects with the provider `USER_PROVIDED_EFFECTS`.
+
+<code-example header="movies.module.ts">
+providers: [
+  MovieEffects,
+  {
+    provide: USER_PROVIDED_EFFECTS,
+    multi: true,
+    useValue: [MovieEffects],
+  },
+]
+</code-example>
+
+<div class="alert is-critical">
+
+The `EffectsModule.forFeature()` method must be added to the module imports even if you only provide effects over token, and don't pass them via parameters. (Same goes for `EffectsModule.forRoot()`)
+
+</div>
+
 ## Incorporating State
 
 If additional metadata is needed to perform an effect besides the initiating action's `type`, we should rely on passed metadata from an action creator's `props` method.
@@ -276,16 +297,15 @@ export class AuthEffects {
 
 The `login` action has additional `credentials` metadata which is passed to a service to log the specific user into the application.
 
-However, there may be cases when the required metadata is only accessible from state.  When state is needed, the RxJS `withLatestFrom` operator can be used to provide it.
+However, there may be cases when the required metadata is only accessible from state.  When state is needed, the RxJS `withLatestFrom` or the @ngrx/effects `concatLatestFrom` operators can be used to provide it.
 
 The example below shows the `addBookToCollectionSuccess$` effect displaying a different alert depending on the number of books in the collection state.
 
 <code-example header="collection.effects.ts">
 import { Injectable } from '@angular/core';
-import { Store, select } from '@ngrx/store';
-import { Actions, ofType, createEffect } from '@ngrx/effects';
-import { of } from 'rxjs';
-import { tap, concatMap, withLatestFrom } from 'rxjs/operators';
+import { Store } from '@ngrx/store';
+import { Actions, ofType, createEffect, concatLatestFrom } from '@ngrx/effects';
+import { tap } from 'rxjs/operators';
 import { CollectionApiActions } from '../actions';
 import * as fromBooks from '../reducers';
 
@@ -295,9 +315,7 @@ export class CollectionEffects {
     () =>
       this.actions$.pipe(
         ofType(CollectionApiActions.addBookSuccess),
-        concatMap(action => of(action).pipe(
-          withLatestFrom(this.store.pipe(select(fromBooks.getCollectionBookIds)))
-        )),
+        concatLatestFrom(action => this.store.select(fromBooks.getCollectionBookIds)),
         tap(([action, bookCollection]) => {
           if (bookCollection.length === 1) {
             window.alert('Congrats on adding your first book!');
@@ -318,8 +336,8 @@ export class CollectionEffects {
 
 <div class="alert is-important">
 
-**Note:** For performance reasons, use a flattening operator in combination with `withLatestFrom` to prevent the selector from firing until the correct action is dispatched.
+**Note:** For performance reasons, use a flattening operator like `concatLatestFrom` to prevent the selector from firing until the correct action is dispatched.
 
 </div>
 
-To learn about testing effects that incorporate state, see the [Effects that use State](guide/effects/testing#effects-that-use-state) section in the testing guide.
+To learn about testing effects that incorporate state, see the [Effects that use State](guide/effects/testing#effect-that-uses-state) section in the testing guide.

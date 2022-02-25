@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { Actions } from '@ngrx/effects';
 import { provideMockActions } from '@ngrx/effects/testing';
@@ -44,13 +44,13 @@ describe('AuthEffects', () => {
       ],
     });
 
-    effects = TestBed.get(AuthEffects);
-    authService = TestBed.get(AuthService);
-    actions$ = TestBed.get(Actions);
-    routerService = TestBed.get(Router);
-    dialog = TestBed.get(MatDialog);
+    effects = TestBed.inject(AuthEffects);
+    authService = TestBed.inject(AuthService);
+    actions$ = TestBed.inject(Actions);
+    routerService = TestBed.inject(Router);
+    dialog = TestBed.inject(MatDialog);
 
-    spyOn(routerService, 'navigate').and.callThrough();
+    jest.spyOn(routerService, 'navigate');
   });
 
   describe('login$', () => {

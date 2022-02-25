@@ -9,6 +9,8 @@ import {
 } from '@example-app/books/actions';
 import { Book } from '@example-app/books/models';
 
+export const booksFeatureKey = 'books';
+
 /**
  * @ngrx/entity provides a predefined interface for handling
  * a structured dictionary of records. This interface
@@ -79,4 +81,4 @@ export const reducer = createReducer(
  * use-case.
  */
 
-export const getSelectedId = (state: State) => state.selectedBookId;
+export const selectId = (state: State) => state.selectedBookId;

@@ -1,10 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 
-import { Store } from '@ngrx/store';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { BehaviorSubject } from 'rxjs';
-import { MatCardModule } from '@angular/material';
 
 import {
   BookAuthorsComponent,
@@ -13,18 +11,17 @@ import {
 import { SelectedBookPageComponent } from '@example-app/books/containers';
 import { ViewBookPageComponent } from '@example-app/books/containers';
 import { ViewBookPageActions } from '@example-app/books/actions';
-import * as fromBooks from '@example-app/books/reducers';
 import { AddCommasPipe } from '@example-app/shared/pipes/add-commas.pipe';
+import { MaterialModule } from '@example-app/material';
 
 describe('View Book Page', () => {
   let fixture: ComponentFixture<ViewBookPageComponent>;
-  let store: MockStore<fromBooks.State>;
-  let instance: ViewBookPageComponent;
+  let store: MockStore;
   let route: ActivatedRoute;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [MatCardModule],
+      imports: [MaterialModule],
       providers: [
         {
           provide: ActivatedRoute,
@@ -42,9 +39,8 @@ describe('View Book Page', () => {
     });
 
     fixture = TestBed.createComponent(ViewBookPageComponent);
-    instance = fixture.componentInstance;
-    store = TestBed.get(Store);
-    route = TestBed.get(ActivatedRoute);
+    store = TestBed.inject(MockStore);
+    route = TestBed.inject(ActivatedRoute);
 
     jest.spyOn(store, 'dispatch');
   });

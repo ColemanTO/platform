@@ -1,31 +1,18 @@
 module.exports = {
-  rootDir: '.',
-  setupFilesAfterEnv: ['<rootDir>/src/setup-jest.ts'],
+  displayName: 'Example App',
+  preset: '../../jest.preset.js',
+  coverageDirectory: '../../coverage/apps/example-app',
+  setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   globals: {
     'ts-jest': {
-      tsConfig: 'projects/example-app/tsconfig.spec.json',
-      stringifyContentPathRegex: '\\.html?$',
-      astTransformers: [
-        require.resolve('jest-preset-angular/InlineHtmlStripStylesTransformer'),
-      ],
+      tsconfig: '<rootDir>/tsconfig.spec.json',
+      stringifyContentPathRegex: '\\.(html|svg)$',
     },
   },
-  transform: {
-    '^.+\\.(ts|js|html)$': 'ts-jest',
-  },
-  testMatch: ['<rootDir>/**/*.spec.ts'],
-  testEnvironment: 'jest-environment-jsdom-thirteen',
-  moduleFileExtensions: ['html', 'js', 'json', 'ts'],
-  coveragePathIgnorePatterns: ['/node_modules/', '/modules/*.*/'],
+  transform: { '^.+\\.(ts|js|mjs|html)$': 'jest-preset-angular' },
+  transformIgnorePatterns: ['node_modules/(?!@angular|tslib)'],
   moduleNameMapper: {
-    '^@ngrx/(.*)': '<rootDir>/../../modules/$1',
-    '^@example-app/(.*)': '<rootDir>/src/app/$1',
+    tslib: '<rootDir>../../node_modules/tslib/tslib.es6.js',
   },
-  transformIgnorePatterns: ['node_modules/(?!@ngrx)'],
-  modulePathIgnorePatterns: ['dist'],
-  preset: 'jest-preset-angular',
-  snapshotSerializers: [
-    'jest-preset-angular/AngularSnapshotSerializer.js',
-    'jest-preset-angular/HTMLCommentSerializer.js',
-  ],
+  testRunner: 'jest-circus/runner',
 };

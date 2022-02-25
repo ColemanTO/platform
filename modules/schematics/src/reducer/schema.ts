@@ -20,9 +20,9 @@ export interface Schema {
   flat?: boolean;
 
   /**
-   * Specifies if a spec file is generated.
+   * When true, does not create test files.
    */
-  spec?: boolean;
+  skipTests?: boolean;
 
   /**
    * Allows specification of the declaring module.
@@ -55,4 +55,9 @@ export interface Schema {
    * handling actions and reducers.
    */
   creators?: boolean;
+
+  /**
+   * The prefix for the reducers.
+   */
+  prefix?: string;
 }

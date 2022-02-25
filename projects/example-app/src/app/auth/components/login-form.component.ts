@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import { Credentials } from '@example-app/auth/models';
 
@@ -76,7 +76,7 @@ import { Credentials } from '@example-app/auth/models';
     `,
   ],
 })
-export class LoginFormComponent implements OnInit {
+export class LoginFormComponent {
   @Input()
   set pending(isPending: boolean) {
     if (isPending) {
@@ -86,7 +86,7 @@ export class LoginFormComponent implements OnInit {
     }
   }
 
-  @Input() errorMessage: string | null;
+  @Input() errorMessage!: string | null;
 
   @Output() submitted = new EventEmitter<Credentials>();
 
@@ -94,10 +94,6 @@ export class LoginFormComponent implements OnInit {
     username: new FormControl('ngrx'),
     password: new FormControl(''),
   });
-
-  constructor() {}
-
-  ngOnInit() {}
 
   submit() {
     if (this.form.valid) {

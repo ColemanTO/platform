@@ -4,7 +4,6 @@ import { Store } from '@ngrx/store';
 import { Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import * as fromBooks from '@example-app/books/reducers';
 import { ViewBookPageActions } from '@example-app/books/actions';
 
 /**
@@ -20,17 +19,15 @@ import { ViewBookPageActions } from '@example-app/books/actions';
 @Component({
   selector: 'bc-view-book-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <bc-selected-book-page></bc-selected-book-page>
-  `,
+  template: ` <bc-selected-book-page></bc-selected-book-page> `,
 })
 export class ViewBookPageComponent implements OnDestroy {
   actionsSubscription: Subscription;
 
-  constructor(store: Store<fromBooks.State>, route: ActivatedRoute) {
+  constructor(store: Store, route: ActivatedRoute) {
     this.actionsSubscription = route.params
-      .pipe(map(params => ViewBookPageActions.selectBook({ id: params.id })))
-      .subscribe(action => store.dispatch(action));
+      .pipe(map((params) => ViewBookPageActions.selectBook({ id: params.id })))
+      .subscribe((action) => store.dispatch(action));
   }
 
   ngOnDestroy() {

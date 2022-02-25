@@ -1,9 +1,4 @@
-import {
-  createSelector,
-  createFeatureSelector,
-  Action,
-  combineReducers,
-} from '@ngrx/store';
+import { createSelector, createFeatureSelector } from '@ngrx/store';
 import * as fromAuth from './auth.reducer';
 
 export interface AuthState {
@@ -21,7 +16,7 @@ export const selectAuthStatusState = createSelector(
   (state: AuthState) => state.status
 );
 
-export const getLoggedIn = createSelector(
+export const getUsername = createSelector(
   selectAuthStatusState,
-  fromAuth.getLoggedIn
+  fromAuth.getUsername
 );

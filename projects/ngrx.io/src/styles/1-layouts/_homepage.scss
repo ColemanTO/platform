@@ -1,4 +1,6 @@
 aio-shell.page-home {
+  line-height: initial;
+
   aio-doc-viewer {
     display: block;
     width: 100vw;
@@ -67,6 +69,7 @@ aio-shell.page-home {
     padding: 6px 28px;
     color: white;
     text-transform: uppercase;
+    position: relative;
   }
 
   h2,

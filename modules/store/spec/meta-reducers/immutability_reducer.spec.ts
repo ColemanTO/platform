@@ -33,6 +33,20 @@ describe('immutabilityCheckMetaReducer:', () => {
       }).toThrow();
     });
 
+    it('should not throw on ivy properties (because these are ignored)', () => {
+      let dispatchedAction: any;
+      expect(() =>
+        invokeActionReducer((state: any, action: any) => {
+          dispatchedAction = action;
+          return state;
+        })
+      ).not.toThrow();
+
+      expect(() => {
+        dispatchedAction.ɵIvyProperty.value = 2;
+      }).not.toThrow();
+    });
+
     it('should not throw when check is off', () => {
       expect(() =>
         invokeActionReducer((state: any, action: any) => {
@@ -44,9 +58,17 @@ describe('immutabilityCheckMetaReducer:', () => {
 
     function invokeActionReducer(reduce: Function, checkIsOn = true) {
       immutabilityCheckMetaReducer((state, action) => reduce(state, action), {
-        action: checkIsOn,
-        state: false,
-      })({}, { type: 'invoke', numbers: [1, 2, 3], fun: function() {} });
+        action: () => checkIsOn,
+        state: () => false,
+      })(
+        {},
+        {
+          type: 'invoke',
+          numbers: [1, 2, 3],
+          fun: function () {},
+          ɵIvyProperty: { value: 1 },
+        }
+      );
     }
   });
 
@@ -95,8 +117,8 @@ describe('immutabilityCheckMetaReducer:', () => {
           return reduce(state, action);
         },
         {
-          state: checkIsOn,
-          action: false,
+          state: () => checkIsOn,
+          action: () => false,
         }
       );
 

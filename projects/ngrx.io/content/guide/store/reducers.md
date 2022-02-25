@@ -20,11 +20,12 @@ and the associated reducer function.
 First, define some actions for interacting with a piece of state.
 
 <code-example header="scoreboard-page.actions.ts">
-import { createAction } from '@ngrx/store';
+import { createAction, props } from '@ngrx/store';
 
 export const homeScore = createAction('[Scoreboard Page] Home Score');
 export const awayScore = createAction('[Scoreboard Page] Away Score');
 export const resetScore = createAction('[Scoreboard Page] Score Reset');
+export const setScores = createAction('[Scoreboard Page] Set Scores', props<{game: Game}>());
 
 </code-example>
 
@@ -68,25 +69,24 @@ The initial values for the `home` and `away` properties of the state are 0.
 The reducer function's responsibility is to handle the state transitions in an immutable way. Create a reducer function that handles the actions for managing the state of the scoreboard using the `createReducer` function.
 
 <code-example header="scoreboard.reducer.ts">
-const scoreboardReducer = createReducer(
+export const scoreboardReducer = createReducer(
   initialState,
   on(ScoreboardPageActions.homeScore, state => ({ ...state, home: state.home + 1 })),
   on(ScoreboardPageActions.awayScore, state => ({ ...state, away: state.away + 1 })),
-  on(ScoreboardPageActions.resetScore, state => ({ home: 0, away: 0 }))
+  on(ScoreboardPageActions.resetScore, state => ({ home: 0, away: 0 })),
+  on(ScoreboardPageActions.setScores, (state, { game }) => ({ home: game.home, away: game.away }))
 );
 
-export function reducer(state: State | undefined, action: Action) {
-  return scoreboardReducer(state, action);
-}
 </code-example>
 
 <div class="alert is-important">
 
-**Note:** The exported `reducer` function is necessary as [function calls are not supported](https://angular.io/guide/aot-compiler#function-calls-are-not-supported) by the AOT compiler.
+**Note:** The exported `reducer` function is no longer required if you use the default Ivy AOT compiler (or JIT). It is only necessary with the View Engine AOT compiler as [function calls are not supported](https://angular.io/guide/aot-compiler#function-calls-are-not-supported) there.
 
 </div>
 
-In the example above, the reducer is handling 3 actions: `[Scoreboard Page] Home Score`, `[Scoreboard Page] Away Score`, and `[Scoreboard Page] Score Reset`. Each action is strongly-typed. Each action handles the state transition immutably. This means that the state transitions are not modifying the original state, but are returning a new state object using the spread operator. The spread syntax copies the properties from the current state into the object, creating a new reference. This ensures that a new state is produced with each change, preserving the purity of the change. This also promotes referential integrity, guaranteeing that the old reference was discarded when a state change occurred.
+In the example above, the reducer is handling 4 actions: `[Scoreboard Page] Home Score`, `[Scoreboard Page] Away Score`, `[Scoreboard Page] Score Reset` and `[Scoreboard Page] Set Scores`. Each action is strongly-typed. Each action handles the state transition immutably. This means that the state transitions are not modifying the original state, but are returning a new state object using the spread operator. The spread syntax copies the properties from the current state into the object, creating a new reference. This ensures that a new state is produced with each change, preserving the purity of the change. This also promotes referential integrity, guaranteeing that the old reference was discarded when a state change occurred.
+
 
 <div class="alert is-important">
 
@@ -148,6 +148,10 @@ This registers your application with an empty object for the root state.
 
 Now use the `scoreboard` reducer with a feature `NgModule` named `ScoreboardModule` to register additional state.
 
+<code-example header="scoreboard.reducer.ts">
+export const scoreboardFeatureKey = 'game';
+</code-example>
+
 <code-example header="scoreboard.module.ts">
 import { NgModule } from '@angular/core';
 import { StoreModule } from '@ngrx/store';
@@ -155,11 +159,17 @@ import * as fromScoreboard from './reducers/scoreboard.reducer';
 
 @NgModule({
   imports: [
-    StoreModule.forFeature('game', fromScoreboard.reducer)
+    StoreModule.forFeature(fromScoreboard.scoreboardFeatureKey, fromScoreboard.reducer)
   ],
 })
 export class ScoreboardModule {}
 </code-example>
+
+<div class="alert is-important">
+
+**Note:** It is recommended to abstract a feature key string to prevent hardcoding strings when registering feature state and calling `createFeatureSelector`.
+
+</div>
 
 Add the `ScoreboardModule` to the `AppModule` to load the state eagerly.
 

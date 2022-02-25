@@ -1,6 +1,5 @@
 import {
   Rule,
-  SchematicsException,
   apply,
   applyTemplates,
   branchAndMerge,
@@ -9,7 +8,6 @@ import {
   mergeWith,
   move,
   noop,
-  template,
   url,
   Tree,
   SchematicContext,
@@ -19,11 +17,14 @@ import {
   getProjectPath,
   stringUtils,
   parseName,
-} from '@ngrx/schematics/schematics-core';
+  getPrefix,
+} from '../../schematics-core';
 
-export default function(options: ActionOptions): Rule {
+export default function (options: ActionOptions): Rule {
   return (host: Tree, context: SchematicContext) => {
     options.path = getProjectPath(host, options);
+
+    options.prefix = getPrefix(options);
 
     const parsedPath = parseName(options.path, options.name);
     options.name = parsedPath.name;
@@ -32,9 +33,9 @@ export default function(options: ActionOptions): Rule {
     const templateSource = apply(
       url(options.creators ? './creator-files' : './files'),
       [
-        options.spec
-          ? noop()
-          : filter(path => !path.endsWith('.spec.ts.template')),
+        options.skipTests
+          ? filter((path) => !path.endsWith('.spec.ts.template'))
+          : noop(),
         applyTemplates({
           ...stringUtils,
           'if-flat': (s: string) =>

@@ -16,7 +16,9 @@ const packageMap = {
   entity: ['entity/index.ts'],
   'router-store': ['router-store/index.ts'],
   data: ['data/index.ts'],
-  schematics: ['schematics/index.ts']
+  schematics: ['schematics/index.ts'],
+  'component-store': ['component-store/index.ts'],
+  component: ['component/index.ts'],
 };
 
 

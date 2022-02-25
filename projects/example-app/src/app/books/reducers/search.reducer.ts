@@ -4,6 +4,8 @@ import {
 } from '@example-app/books/actions';
 import { createReducer, on } from '@ngrx/store';
 
+export const searchFeatureKey = 'search';
+
 export interface State {
   ids: string[];
   loading: boolean;
@@ -36,7 +38,7 @@ export const reducer = createReducer(
         };
   }),
   on(BooksApiActions.searchSuccess, (state, { books }) => ({
-    ids: books.map(book => book.id),
+    ids: books.map((book) => book.id),
     loading: false,
     error: '',
     query: state.query,

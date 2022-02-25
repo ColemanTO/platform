@@ -2,28 +2,27 @@
 
 ### Using a Mock Store
 
-The `provideMockStore()` function registers providers that allow you to mock out the `Store` for testing functionality that has a dependency on `Store` without setting up reducers. 
+The `provideMockStore()` function registers providers that allow you to mock out the `Store` for testing functionality that has a dependency on `Store` without setting up reducers.
 You can write tests validating behaviors corresponding to the specific state snapshot easily.
 
 <div class="alert is-helpful">
 
-**Note:** All dispatched actions don't affect to the state, but you can see them in the `Actions` stream.
+**Note:** All dispatched actions don't affect the state, but you can see them in the `scannedActions$` stream.
 
 </div>
 
-Usage: 
+Usage:
 
 <code-example header="auth.guard.spec.ts">
 import { TestBed } from '@angular/core/testing';
-import { Store } from '@ngrx/store';
-import { provideMockStore } from '@ngrx/store/testing';
+import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { cold } from 'jasmine-marbles';
 
 import { AuthGuard } from '../guards/auth.guard';
 
 describe('Auth Guard', () => {
   let guard: AuthGuard;
-  let store: MockStore&lt;{ loggedIn: boolean }&gt;;
+  let store: MockStore;
   const initialState = { loggedIn: false };
 
   beforeEach(() => {
@@ -38,8 +37,8 @@ describe('Auth Guard', () => {
       ],
     });
 
-    store = TestBed.get&lt;Store&gt(Store);
-    guard = TestBed.get&lt;AuthGuard&gt;(AuthGuard);
+    store = TestBed.inject(MockStore);
+    guard = TestBed.inject(AuthGuard);
   });
 
   it('should return false if the user state is not logged in', () => {
@@ -60,62 +59,86 @@ describe('Auth Guard', () => {
 
 ### Using Mock Selectors
 
-`MockStore` also provides the ability to mock individual selectors to return a passed value using the `overrideSelector()` method. When the selector is invoked by the `select` method, the returned value is overridden by the passed value, regardless of the current state in the store. 
+`MockStore` also provides the ability to mock individual selectors to return a passed value using the `overrideSelector()` method. When the selector is invoked by the `select` method, the returned value is overridden by the passed value, regardless of the current state in the store.
 
-`overrideSelector()` returns a `MemoizedSelector`. To update the mock selector to return a different value, use the `MemoizedSelector`'s `setResult()` method.
+`overrideSelector()` returns a `MemoizedSelector`. To update the mock selector to return a different value, use the `MemoizedSelector`'s `setResult()` method. Updating a selector's mock value will not cause it to emit automatically. To trigger an emission from all selectors, use the `MockStore.refreshState()` method after updating the desired selectors.
 
 `overrideSelector()` supports mocking the `select` method (used in RxJS pipe) and the `Store` `select` instance method using a string or selector.
 
 Usage:
 
-<code-example header="auth-guard.service.ts" path="testing-store/src/app/auth-guard.service.ts"></code-example>
+<code-example header="src/app/state/books.selectors.ts" path="testing-store/src/app/state/books.selectors.ts"></code-example>
 
-<code-example header="auth-guard.service.spec.ts" path="testing-store/src/app/auth-guard.service.spec.ts"></code-example>
+<code-example header="src/app/app.component.spec.ts (Using Mock Selectors) " path="store-walkthrough/src/app/tests/app.component.1.spec.ts" region="mockSelector"></code-example>
 
-In this example, we mock the `getLoggedIn` selector by using `overrideSelector`, passing in the `getLoggedIn` selector with a default mocked return value of `false`.  In the second test, we use `setResult()` to update the mock selector to return `true`.
+In this example based on the [walkthrough](guide/store/walkthrough), we mock the `selectBooks` selector by using `overrideSelector`, passing in the `selectBooks` selector with a default mocked return value of an array of books. Similarly, we mock the `selectBookCollection` selector and pass the selector together with another array. In the test, we use `setResult()` to update the mock selectors to return new array values, then we use `MockStore.refreshState()` to trigger an emission from the `selectBooks` and `selectBookCollection` selectors.
+
+You can reset selectors by calling the `MockStore.resetSelectors()` method in the `afterEach()` hook.
+
+<code-example header="src/app/app.component.spec.ts (Reset Mock Selector) " path="store-walkthrough/src/app/tests/app.component.1.spec.ts" region="resetMockSelector"></code-example>
 
 Try the <live-example name="testing-store"></live-example>.
 
 ### Integration Testing
 
-An integration test should verify that the `Store` coherently works together with our components and services that inject `Store`.  An integration test will not mock the store or individual selectors, as unit tests do, but will instead integrate a `Store` by using `StoreModule.forRoot` in your `TestBed` configuration.  Here is an example of an integration test for the `MyCounterComponent` introduced in the [getting started tutorial](guide/store#tutorial).
+An integration test should verify that the `Store` coherently works together with our components and services that inject `Store`. An integration test will not mock the store or individual selectors, as unit tests do, but will instead integrate a `Store` by using `StoreModule.forRoot` in your `TestBed` configuration. Here is part of an integration test for the `AppComponent` introduced in the [walkthrough](guide/store/walkthrough).
 
-<code-example header="src/app/tests/integration.spec.ts" path="store/src/app/tests/integration.spec.ts">
+<code-example header="src/app/tests/integration.spec.ts (Integrate Store)" path="store-walkthrough/src/app/tests/integration.spec.ts" region="integrate">
 </code-example>
 
-The integration test sets up the dependent `Store` by importing the `StoreModule`. In this example, we assert that clicking a button dispatches an action that causes the state to be updated with an incremented, decremented, or reset counter value, which is correctly emitted by the selector.
+The integration test sets up the dependent `Store` by importing the `StoreModule`. In this part of the example, we assert that clicking the `add` button dispatches the corresponding action and is correctly emitted by the `collection` selector.
+
+<code-example header="src/app/tests/integration.spec.ts (addButton Test)" path="store-walkthrough/src/app/tests/integration.spec.ts" region="addTest">
+</code-example>
 
 ### Testing selectors
 
-You can use the projector function used by the selector by accessing the `.projector` property.
+You can use the projector function used by the selector by accessing the `.projector` property. The following example tests the `books` selector from the [walkthrough](guide/store/walkthrough).
 
-<code-example header="my.reducer.ts">
-export interface State {
-  evenNums: number[];
-  oddNums: number[];
-}
-
-export const selectSumEvenNums = createSelector(
-  (state: State) => state.evenNums,
-  evenNums => evenNums.reduce((prev, curr) => prev + curr)
-);
-export const selectSumOddNums = createSelector(
-  (state: State) => state.oddNums,
-  oddNums => oddNums.reduce((prev, curr) => prev + curr)
-);
-export const selectTotal = createSelector(
-  selectSumEvenNums,
-  selectSumOddNums,
-  (evenSum, oddSum) => evenSum + oddSum
-);
+<code-example header="src/app/state/books.selectors.spec.ts" path="testing-store/src/app/state/books.selectors.spec.ts">
 </code-example>
 
-<code-example header="my.reducer.spec.ts">
-import * as fromMyReducers from './my-reducers';
+### Testing reducers
 
-describe('My Selectors', () => {
-  it('should calc selectTotal', () => {
-    expect(fromMyReducers.selectTotal.projector(2, 3)).toBe(5);
+The following example tests the `booksReducer` from the [walkthrough](guide/store/walkthrough). In the first test we check that the state returns the same reference when the reducer is not supposed to handle the action (unknown action). The second test checks that `retrievedBookList` action updates the state and returns the new instance of it.
+
+<code-example header="src/app/state/books.reducer.spec.ts" path="testing-store/src/app/state/books.reducer.spec.ts"></code-example>
+
+### Testing without `TestBed`
+
+The `provideMockStore()` function can be also used with `Injector.create`:
+
+<code-example header="books.component.spec.ts">
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
+import { Injector } from '@angular/core';
+
+describe('Books Component', () => {
+  let store: MockStore;
+  const initialState = { books: ['Book 1', 'Book 2', 'Book 3'] };
+
+  beforeEach(() => {
+    const injector = Injector.create({
+      providers: [
+        provideMockStore({ initialState }),
+      ],
+    });
+    
+    store = injector.get(MockStore);
+  });
+});
+</code-example>
+
+Another option to create the `MockStore` without `TestBed` is by calling the `getMockStore()` function:
+
+<code-example header="books.component.spec.ts">
+import { MockStore, getMockStore } from '@ngrx/store/testing';
+
+describe('Books Component', () => {
+  let store: MockStore;
+  const initialState = { books: ['Book 1', 'Book 2', 'Book 3'] };
+
+  beforeEach(() => {    
+    store = getMockStore({ initialState });
   });
 });
 </code-example>

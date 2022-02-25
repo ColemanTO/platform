@@ -7,6 +7,7 @@ import {
   group,
   capitalize,
   featurePath,
+  pluralize,
 } from './utility/strings';
 
 export {
@@ -20,8 +21,10 @@ export {
   addDeclarationToModule,
   addExportToModule,
   addImportToModule,
+  addProviderToComponent,
   addProviderToModule,
   replaceImport,
+  containsProperty,
 } from './utility/ast-utils';
 
 export {
@@ -38,6 +41,8 @@ export {
 
 export { AppConfig, getWorkspace, getWorkspacePath } from './utility/config';
 
+export { findComponentFromOptions } from './utility/find-component';
+
 export {
   findModule,
   findModuleFromOptions,
@@ -45,12 +50,15 @@ export {
   ModuleOptions,
 } from './utility/find-module';
 
+export { findPropertyInAstObject } from './utility/json-utilts';
+
 export {
   addReducerToState,
   addReducerToStateInterface,
   addReducerImportToNgModule,
   addReducerToActionReducerMap,
   omit,
+  getPrefix,
 } from './utility/ngrx-utils';
 
 export { getProjectPath, getProject, isLib } from './utility/project';
@@ -64,6 +72,7 @@ export const stringUtils = {
   group,
   capitalize,
   featurePath,
+  pluralize,
 };
 
 export { updatePackage } from './utility/update';
@@ -74,4 +83,12 @@ export { addPackageToPackageJson } from './utility/package';
 
 export { platformVersion } from './utility/libs-version';
 
-export { visitTSSourceFiles } from './utility/visit-utils';
+export {
+  visitTSSourceFiles,
+  visitNgModuleImports,
+  visitNgModuleExports,
+  visitComponents,
+  visitDecorator,
+  visitNgModules,
+  visitTemplates,
+} from './utility/visitors';

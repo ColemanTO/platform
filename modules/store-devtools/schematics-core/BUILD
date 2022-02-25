@@ -1,6 +1,6 @@
-package(default_visibility = ["//visibility:public"])
+load("//tools:defaults.bzl", "pkg_npm", "ts_library")
 
-load("//tools:defaults.bzl", "npm_package", "ts_library")
+package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "schematics-core",
@@ -17,11 +17,12 @@ ts_library(
     deps = [
         "@npm//@angular-devkit/core",
         "@npm//@angular-devkit/schematics",
+        "@npm//tslib",
         "@npm//typescript",
     ],
 )
 
-npm_package(
+pkg_npm(
     name = "npm_package",
     srcs = [],
     deps = [

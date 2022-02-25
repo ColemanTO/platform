@@ -1,3 +1,6 @@
+export const RUNTIME_CHECK_URL =
+  'https://ngrx.io/guide/store/configuration/runtime-checks';
+
 export function isUndefined(target: any): target is undefined {
   return target === undefined;
 }
@@ -39,8 +42,12 @@ export function isPlainObject(target: any): target is object {
   return targetPrototype === Object.prototype || targetPrototype === null;
 }
 
-export function isFunction(target: any): target is Function {
+export function isFunction(target: any): target is () => void {
   return typeof target === 'function';
+}
+
+export function isComponent(target: any) {
+  return isFunction(target) && target.hasOwnProperty('ɵcmp');
 }
 
 export function hasOwnProperty(target: object, propertyName: string): boolean {

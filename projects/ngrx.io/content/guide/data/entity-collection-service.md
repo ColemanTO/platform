@@ -95,8 +95,8 @@ All _selector observable_ properties of an `EntityCollectionService` follow this
 
 #### The _selector observable_ versus the _selector function_
 
-The _`selector$`_ observable (ending with an `'$'`) differs from the similarly named and 
-closely-related `selector` function (no `'$'` suffix) 
+The _`selector$`_ observable (ending with an `'$'`) differs from the similarly named and
+closely-related `selector` function (no `'$'` suffix)
 
 A `selector` is a _function_ that _selects_ a slice of state from the entity collection.
 A `selector$` observable emits that slice of state when the state changes.
@@ -104,7 +104,7 @@ A `selector$` observable emits that slice of state when the state changes.
 NgRx Data creates a `selector$` observable by passing the _selector_ function to the NgRx `select` operator and piping it onto the NgRx store, as seen in the following example:
 
 ```typescript
-loading$ = this.store.pipe(select(selectLoading)); 
+loading$ = this.store.select(selectLoading);
 ```
 
 #### Using _selectors$_
@@ -129,7 +129,7 @@ There are two kinds of commands:
 1.  Commands that trigger requests to the server.
 1.  Cache-only commands that update the cached entity collection.
 
-The server commands are simple verbs like "add" and "getAll".  
+The server commands are simple verbs like "add" and "getAll".
 They dispatch actions that trigger asynchronous requests to a remote server.
 
 The cache-only command methods are longer verbs like "addManyToCache" and "removeOneFromCache"
@@ -157,13 +157,6 @@ An entity argument **must never be a cached entity object**.
 It can be a _copy_ of a cached entity object and it often is.
 The demo application always calls these command methods with copies of the entity data.
 
-<div class="alert is-helpful">
-
-The current _NgRx_ libraries do not guard against mutation of the objects (or arrays of objects) in the store.
-A future _NgRx_ **_freeze_** feature will provide such a guard in _development_ builds.
-
-</div>
-
 All _command methods_ return `void`.
 A core principle of the _redux pattern_ is that _commands_ never return a value. They just _do things_ that have side-effects.
 
@@ -173,5 +166,5 @@ the effects of the command. If the command did something you care about, a _sele
 
 ## _EntityCollectionServiceFactory_
 
-The `create<T>()` method of the NgRx Data `EntityCollectionServiceFactory` produces a new instance 
+The `create<T>()` method of the NgRx Data `EntityCollectionServiceFactory` produces a new instance
 of the `EntityCollectionServiceBase<T>` class that implements the `EntityCollectionService` interface for the entity type `T`.

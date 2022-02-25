@@ -1,6 +1,6 @@
-package(default_visibility = ["//visibility:public"])
+load("//tools:defaults.bzl", "jasmine_node_test", "pkg_npm", "ts_library", "ts_test_library")
 
-load("//tools:defaults.bzl", "jasmine_node_test", "npm_package", "ts_library", "ts_test_library")
+package(default_visibility = ["//visibility:public"])
 
 ts_library(
     name = "schematics",
@@ -14,7 +14,7 @@ ts_library(
         ],
     ),
     module_name = "@ngrx/schematics",
-    tsconfig = ":tsconfig-build.json",
+    tsconfig = ":tsconfig-bazel-build.json",
     deps = [
         "//modules/schematics/schematics-core",
         "@npm//@angular-devkit/core",
@@ -23,7 +23,7 @@ ts_library(
     ],
 )
 
-npm_package(
+pkg_npm(
     name = "npm_package",
     srcs = [
         ":collection.json",
@@ -33,10 +33,11 @@ npm_package(
         "**/src/*/files/**/*",
         "**/src/*/common-files/**/*",
         "**/src/*/creator-files/**/*",
+        "**/src/*/integration-files/**/*",
         "**/schema.json",
         "**/migration.json",
     ]),
-    packages = [
+    nested_packages = [
         "//modules/schematics/migrations:npm_package",
         "//modules/schematics/schematics-core:npm_package",
     ],
@@ -56,11 +57,13 @@ ts_test_library(
         "**/src/*/files/**/*",
         "**/src/*/common-files/**/*",
         "**/src/*/creator-files/**/*",
+        "**/src/*/integration-files/**/*",
         "**/*.json",
     ]),
     deps = [
         ":schematics",
         "//modules/schematics-core",
+        "@npm//@angular-devkit/core",
         "@npm//@angular-devkit/schematics",
         "@npm//@schematics/angular",
     ],

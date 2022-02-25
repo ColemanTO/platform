@@ -18,15 +18,12 @@ describe('act operator', () => {
    * }
    */
   function genActions(marbles: string): { [marble: string]: Action } {
-    return marbles.split('').reduce(
-      (acc, marble) => {
-        return {
-          ...acc,
-          [marble]: createAction(marble)(),
-        };
-      },
-      {} as { [marble: string]: Action }
-    );
+    return marbles.split('').reduce((acc, marble) => {
+      return {
+        ...acc,
+        [marble]: createAction(marble)(),
+      };
+    }, {} as { [marble: string]: Action });
   }
 
   it('should call project functon', () => {
@@ -88,7 +85,7 @@ describe('act operator', () => {
 
   it('should call the error callback when error in the project occurs', () => {
     const sources$ = hot('  -a', genActions('a'));
-    const project = () => throwError('error');
+    const project = () => throwError(() => 'error');
     const error = () => createAction('e')();
     const expected$ = cold('-e', genActions('e'));
 
@@ -100,7 +97,9 @@ describe('act operator', () => {
   it('should continue listen to the sources actions after error occurs', () => {
     const sources$ = hot('-a--b', genActions('ab'));
     const project = (action: Action) =>
-      action.type === 'a' ? throwError('error') : cold('(v|)', genActions('v'));
+      action.type === 'a'
+        ? throwError(() => 'error')
+        : cold('(v|)', genActions('v'));
     const error = () => createAction('e')();
     // error handler action is dispatched and next action with type b is also
     // handled

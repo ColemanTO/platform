@@ -4,7 +4,7 @@ import {
   UnitTestTree,
 } from '@angular-devkit/schematics/testing';
 import * as path from 'path';
-import { createPackageJson } from '../../../schematics-core/testing/create-package';
+import { createPackageJson } from '@ngrx/schematics-core/testing/create-package';
 
 describe('Store Migration 8_0_0 beta', () => {
   let appTree: UnitTestTree;
@@ -23,7 +23,7 @@ describe('Store Migration 8_0_0 beta', () => {
     createPackageJson('', pkgName, appTree);
   });
 
-  it(`should replace the meta reducer imports`, () => {
+  it(`should replace the meta reducer imports`, async () => {
     const contents = `
       import {
         RuntimeChecks,
@@ -46,17 +46,15 @@ describe('Store Migration 8_0_0 beta', () => {
     appTree.create('./app.module.ts', contents);
     const runner = new SchematicTestRunner('schematics', collectionPath);
 
-    const newTree = runner.runSchematic(
-      `ngrx-${pkgName}-migration-02`,
-      {},
-      appTree
-    );
+    const newTree = await runner
+      .runSchematicAsync(`ngrx-${pkgName}-migration-02`, {}, appTree)
+      .toPromise();
     const file = newTree.readContent('app.module.ts');
 
     expect(file).toBe(expected);
   });
 
-  it(`should replace the meta reducer assignments`, () => {
+  it(`should replace the meta reducer assignments`, async () => {
     const contents = `
       @NgModule({
         imports: [
@@ -101,13 +99,53 @@ describe('Store Migration 8_0_0 beta', () => {
     appTree.create('./app.module.ts', contents);
     const runner = new SchematicTestRunner('schematics', collectionPath);
 
-    const newTree = runner.runSchematic(
-      `ngrx-${pkgName}-migration-02`,
-      {},
-      appTree
-    );
+    const newTree = await runner
+      .runSchematicAsync(`ngrx-${pkgName}-migration-02`, {}, appTree)
+      .toPromise();
     const file = newTree.readContent('app.module.ts');
 
     expect(file).toBe(expected);
+  });
+
+  it(`should not run schematics when not using named imports`, async () => {
+    const contents = `
+      import * as store from '@ngrx/store';
+
+      @NgModule({
+        imports: [
+          CommonModule,
+          BrowserModule,
+          BrowserAnimationsModule,
+          HttpClientModule,
+          AuthModule,
+          AppRoutingModule,
+          store.StoreModule.forRoot(reducers),
+        ],
+        providers: [
+          {
+            provide: store.META_REDUCERS,
+            useValue: [fooReducer, barReducer]
+          }
+        ]
+        bootstrap: [AppComponent],
+      })
+      export class AppModule {}
+    `;
+
+    appTree.create('./app.module.ts', contents);
+    const runner = new SchematicTestRunner('schematics', collectionPath);
+
+    const logs: string[] = [];
+    runner.logger.subscribe((log) => logs.push(log.message));
+
+    const newTree = await runner
+      .runSchematicAsync(`ngrx-${pkgName}-migration-02`, {}, appTree)
+      .toPromise();
+    const file = newTree.readContent('app.module.ts');
+
+    expect(file).toBe(contents);
+
+    expect(logs.length).toBe(1);
+    expect(logs[0]).toMatch(/NgRx 8 Migration: Unable to run the schematics/);
   });
 });

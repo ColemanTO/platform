@@ -7,7 +7,7 @@ import {
 
 describe('Migration to version 8.0.0 rc', () => {
   describe('removes the usage of the storeFreeze meta-reducer', () => {
-    /* tslint:disable */
+    /* eslint-disable */
     const fixtures = [
       {
         description: 'removes the ngrx-store-freeze import',
@@ -45,11 +45,11 @@ describe('Migration to version 8.0.0 rc', () => {
           const metaReducers = environment.production ? [] : [foo, bar]`,
       },
     ];
-    /* tslint:enable */
+    /* eslint-enable */
 
     const reducerPath = normalize('reducers/index.ts');
 
-    fixtures.forEach(async ({ description, input, expected }) => {
+    for (const { description, input, expected } of fixtures) {
       it(description, async () => {
         const tree = new UnitTestTree(new EmptyTree());
         // we need a package.json, it will throw otherwise because we're trying to remove ngrx-store-freeze as a dep
@@ -57,17 +57,19 @@ describe('Migration to version 8.0.0 rc', () => {
         tree.create(reducerPath, input);
 
         const schematicRunner = createSchematicsRunner();
-        schematicRunner.runSchematic('ngrx-store-migration-03', {}, tree);
+        await schematicRunner
+          .runSchematicAsync('ngrx-store-migration-03', {}, tree)
+          .toPromise();
         await schematicRunner.engine.executePostTasks().toPromise();
 
         const actual = tree.readContent(reducerPath);
         expect(actual).toBe(expected);
       });
-    });
+    }
   });
 
   describe('StoreModule.forRoot()', () => {
-    /* tslint:disable */
+    /* eslint-disable */
     const fixtures = [
       {
         description:
@@ -117,7 +119,7 @@ describe('Migration to version 8.0.0 rc', () => {
         input: `
         @NgModule({
           imports: [
-            StoreModule.forRoot(ROOT_REDUCERS, { 
+            StoreModule.forRoot(ROOT_REDUCERS, {
               metaReducers,
             }),
           ],
@@ -128,7 +130,7 @@ describe('Migration to version 8.0.0 rc', () => {
         expected: `
         @NgModule({
           imports: [
-            StoreModule.forRoot(ROOT_REDUCERS, { 
+            StoreModule.forRoot(ROOT_REDUCERS, {
               metaReducers, runtimeChecks: { strictStateImmutability: true, strictActionImmutability: true },
             }),
           ],
@@ -179,38 +181,43 @@ describe('Migration to version 8.0.0 rc', () => {
         export class AppModule {}`,
       },
     ];
-    /* tslint:enable */
+    /* eslint-enable */
 
     const appModulePath = normalize('app.module.ts');
 
-    fixtures.forEach(
-      async ({ description, input, isStoreFreezeUsed, expected }) => {
-        it(description, async () => {
-          const tree = new UnitTestTree(new EmptyTree());
-          // we need a package.json, it will throw otherwise because we're trying to remove ngrx-store-freeze as a dep
-          tree.create('/package.json', JSON.stringify({}));
-          if (isStoreFreezeUsed) {
-            // we need this file to "trigger" the runtime additions
-            tree.create(
-              'reducer.ts',
-              'import { storeFreeze } from "ngrx-store-freeze";'
-            );
-          }
-          tree.create(appModulePath, input);
+    for (const {
+      description,
+      input,
+      isStoreFreezeUsed,
+      expected,
+    } of fixtures) {
+      it(description, async () => {
+        const tree = new UnitTestTree(new EmptyTree());
+        // we need a package.json, it will throw otherwise because we're trying to remove ngrx-store-freeze as a dep
+        tree.create('/package.json', JSON.stringify({}));
+        if (isStoreFreezeUsed) {
+          // we need this file to "trigger" the runtime additions
+          tree.create(
+            'reducer.ts',
+            'import { storeFreeze } from "ngrx-store-freeze";'
+          );
+        }
+        tree.create(appModulePath, input);
 
-          const schematicRunner = createSchematicsRunner();
-          schematicRunner.runSchematic('ngrx-store-migration-03', {}, tree);
-          await schematicRunner.engine.executePostTasks().toPromise();
+        const schematicRunner = createSchematicsRunner();
+        await schematicRunner
+          .runSchematicAsync('ngrx-store-migration-03', {}, tree)
+          .toPromise();
+        await schematicRunner.engine.executePostTasks().toPromise();
 
-          const actual = tree.readContent(appModulePath);
-          expect(actual).toBe(expected);
-        });
-      }
-    );
+        const actual = tree.readContent(appModulePath);
+        expect(actual).toBe(expected);
+      });
+    }
   });
 
   describe('package.json', () => {
-    /* tslint:disable */
+    /* eslint-disable */
     const fixtures = [
       {
         description: 'removes ngrx-store-freeze as a dependency',
@@ -236,23 +243,25 @@ describe('Migration to version 8.0.0 rc', () => {
         }),
       },
     ];
-    /* tslint:enable */
+    /* eslint-enable */
 
     const packageJsonPath = normalize('package.json');
 
-    fixtures.forEach(async ({ description, input }) => {
+    for (const { description, input } of fixtures) {
       it(description, async () => {
         const tree = new UnitTestTree(new EmptyTree());
         tree.create(packageJsonPath, input);
 
         const schematicRunner = createSchematicsRunner();
-        schematicRunner.runSchematic('ngrx-store-migration-03', {}, tree);
+        await schematicRunner
+          .runSchematicAsync('ngrx-store-migration-03', {}, tree)
+          .toPromise();
         await schematicRunner.engine.executePostTasks().toPromise();
 
         const actual = tree.readContent(packageJsonPath);
         expect(actual).not.toMatch(/ngrx-store-freeze/);
       });
-    });
+    }
   });
 });
 

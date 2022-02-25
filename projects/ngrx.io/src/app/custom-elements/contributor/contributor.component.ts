@@ -4,14 +4,14 @@ import { Contributor } from './contributors.model';
 import { CONTENT_URL_PREFIX } from 'app/documents/document.service';
 
 @Component({
-  selector: 'aio-contributor',
-  template: `
+    selector: 'aio-contributor',
+    template: `
     <div [ngClass]="{ 'flipped': person.isFlipped }" class="contributor-card">
 
         <div class="card-front" (click)="flipCard(person)">
             <h3>{{person.name}}</h3>
 
-            <div class="contributor-image" [style.background-image]="'url('+pictureBase+(person.picture || noPicture)+')'">
+            <div class="contributor-image" [style.background-image]="'url('+ bioImage +')'">
                 <div class="contributor-info">
                     <a *ngIf="person.bio" mat-button>
                         View Bio
@@ -36,11 +36,19 @@ import { CONTENT_URL_PREFIX } from 'app/documents/document.service';
   `
 })
 export class ContributorComponent {
-  @Input() person: Contributor;
-  noPicture = '_no-one.png';
-  pictureBase = CONTENT_URL_PREFIX + 'images/bios/';
+    @Input() person: Contributor;
+    noPicture = '_no-one.jpg';
+    pictureBase = CONTENT_URL_PREFIX + 'images/bios/';
 
-  flipCard(person: Contributor) {
-    person.isFlipped = !person.isFlipped;
-  }
+    get bioImage() {
+        if (this.person.pictureUrl) {
+            return this.person.pictureUrl;
+        }
+
+        return this.pictureBase+(this.person.picture || this.noPicture);
+    }
+
+    flipCard(person: Contributor) {
+        person.isFlipped = !person.isFlipped;
+    }
 }

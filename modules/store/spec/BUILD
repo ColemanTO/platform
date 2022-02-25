@@ -12,6 +12,7 @@ ts_test_library(
         "//modules/store",
         "//modules/store/spec/fixtures",
         "//modules/store/testing",
+        "@npm//@angular/router",
         "@npm//rxjs",
         "@npm//ts-snippet",
     ],
@@ -21,6 +22,5 @@ jasmine_node_test(
     name = "test",
     deps = [
         ":test_lib",
-        "//modules/store",
     ],
 )

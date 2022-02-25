@@ -3,12 +3,6 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
 
-import {
-  MatCardModule,
-  MatInputModule,
-  MatProgressSpinnerModule,
-} from '@angular/material';
-import { Store } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { FindBookPageActions } from '@example-app/books/actions';
@@ -22,10 +16,11 @@ import { FindBookPageComponent } from '@example-app/books/containers';
 import * as fromBooks from '@example-app/books/reducers';
 import { AddCommasPipe } from '@example-app/shared/pipes/add-commas.pipe';
 import { EllipsisPipe } from '@example-app/shared/pipes/ellipsis.pipe';
+import { MaterialModule } from '@example-app/material';
 
 describe('Find Book Page', () => {
   let fixture: ComponentFixture<FindBookPageComponent>;
-  let store: MockStore<fromBooks.State>;
+  let store: MockStore;
   let instance: FindBookPageComponent;
 
   beforeEach(() => {
@@ -33,9 +28,7 @@ describe('Find Book Page', () => {
       imports: [
         NoopAnimationsModule,
         RouterTestingModule,
-        MatInputModule,
-        MatCardModule,
-        MatProgressSpinnerModule,
+        MaterialModule,
         ReactiveFormsModule,
       ],
       declarations: [
@@ -50,10 +43,10 @@ describe('Find Book Page', () => {
       providers: [
         provideMockStore({
           selectors: [
-            { selector: fromBooks.getSearchQuery, value: '' },
-            { selector: fromBooks.getSearchResults, value: [] },
-            { selector: fromBooks.getSearchLoading, value: false },
-            { selector: fromBooks.getSearchError, value: '' },
+            { selector: fromBooks.selectSearchQuery, value: '' },
+            { selector: fromBooks.selectSearchResults, value: [] },
+            { selector: fromBooks.selectSearchLoading, value: false },
+            { selector: fromBooks.selectSearchError, value: '' },
           ],
         }),
       ],
@@ -61,9 +54,9 @@ describe('Find Book Page', () => {
 
     fixture = TestBed.createComponent(FindBookPageComponent);
     instance = fixture.componentInstance;
-    store = TestBed.get(Store);
+    store = TestBed.inject(MockStore);
 
-    spyOn(store, 'dispatch');
+    jest.spyOn(store, 'dispatch');
   });
 
   it('should compile', () => {

@@ -16,7 +16,14 @@ interface StoreRouterConfig {
 
 ## Default Router State Serializer
 
-If no router state serializer is provided through the [configuration](#configuration-options) of router store, the `DefaultRouterStateSerializer` is used. This router state serializer, serializes the URL together with the [ActivatedRouteSnapshot](https://angular.io/api/router/ActivatedRouteSnapshot) from [Angular Router](https://angular.io/guide/router). The latter is serialized recursively, but only with the possibility to traverse the route downward since `root` and `parent` parameters are set to `undefined`.
+`DefaultRouterStateSerializer` router state serializer, serializes the URL together with the [ActivatedRouteSnapshot](https://angular.io/api/router/ActivatedRouteSnapshot) from [Angular Router](https://angular.io/guide/router). The latter is serialized recursively, but only with the possibility to traverse the route downward since `root` and `parent` parameters are set to `undefined`.
+
+<div class="alert is-important">
+
+The `DefaultRouterStateSerializer` cannot be used when [serializability runtime checks](guide/store/configuration/runtime-checks) are enabled.
+With serializability runtime checks enabled, the `MinimalRouterStateSerializer` serializer **must** be used. This also applies to Ivy with immutability runtime checks.
+
+</div>
 
 ## Custom Router State Serializer
 
@@ -63,6 +70,10 @@ export class CustomSerializer implements RouterStateSerializer&lt;RouterStateUrl
 **In your root reducer**
 
 <code-example header="index.ts">
+export interface State {
+  router: RouterReducerState&lt;any&gt;;
+}
+  
 export const reducers: ActionReducerMap&lt;State&gt; = {
   router: routerReducer
 };

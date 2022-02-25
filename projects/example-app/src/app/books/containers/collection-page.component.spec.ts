@@ -2,8 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
 
-import { MatCardModule, MatInputModule } from '@angular/material';
-import { Store } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { CollectionPageActions } from '@example-app/books/actions';
@@ -16,20 +14,15 @@ import { CollectionPageComponent } from '@example-app/books/containers';
 import * as fromBooks from '@example-app/books/reducers';
 import { AddCommasPipe } from '@example-app/shared/pipes/add-commas.pipe';
 import { EllipsisPipe } from '@example-app/shared/pipes/ellipsis.pipe';
+import { MaterialModule } from '@example-app/material';
 
 describe('Collection Page', () => {
   let fixture: ComponentFixture<CollectionPageComponent>;
-  let store: MockStore<fromBooks.State>;
-  let instance: CollectionPageComponent;
+  let store: MockStore;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        MatCardModule,
-        MatInputModule,
-        RouterTestingModule,
-      ],
+      imports: [NoopAnimationsModule, MaterialModule, RouterTestingModule],
       declarations: [
         CollectionPageComponent,
         BookPreviewListComponent,
@@ -40,16 +33,15 @@ describe('Collection Page', () => {
       ],
       providers: [
         provideMockStore({
-          selectors: [{ selector: fromBooks.getBookCollection, value: [] }],
+          selectors: [{ selector: fromBooks.selectBookCollection, value: [] }],
         }),
       ],
     });
 
     fixture = TestBed.createComponent(CollectionPageComponent);
-    instance = fixture.componentInstance;
-    store = TestBed.get(Store);
+    store = TestBed.inject(MockStore);
 
-    spyOn(store, 'dispatch');
+    jest.spyOn(store, 'dispatch');
   });
 
   it('should compile', () => {
@@ -59,7 +51,7 @@ describe('Collection Page', () => {
   });
 
   it('should dispatch a collection.Load on init', () => {
-    const action = CollectionPageActions.loadCollection();
+    const action = CollectionPageActions.enter();
 
     fixture.detectChanges();
 

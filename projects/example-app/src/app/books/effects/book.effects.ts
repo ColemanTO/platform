@@ -16,7 +16,7 @@ import {
   BooksApiActions,
   FindBookPageActions,
 } from '@example-app/books/actions';
-import { GoogleBooksService } from '@example-app/core/services/google-books.service';
+import { GoogleBooksService } from '@example-app/core/services';
 
 /**
  * Effects offer a way to isolate and easily test side-effects within your
@@ -49,8 +49,8 @@ export class BookEffects {
           return this.googleBooks.searchBooks(query).pipe(
             takeUntil(nextSearch$),
             map((books: Book[]) => BooksApiActions.searchSuccess({ books })),
-            catchError(err =>
-              of(BooksApiActions.searchFailure({ errorMsg: err }))
+            catchError((err) =>
+              of(BooksApiActions.searchFailure({ errorMsg: err.message }))
             )
           );
         })

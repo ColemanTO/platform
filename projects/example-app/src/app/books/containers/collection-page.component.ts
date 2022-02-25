@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 
-import { select, Store } from '@ngrx/store';
+import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 
 import { CollectionPageActions } from '@example-app/books/actions';
@@ -15,7 +15,7 @@ import * as fromBooks from '@example-app/books/reducers';
       <mat-card-title>My Collection</mat-card-title>
     </mat-card>
 
-    <bc-book-preview-list [books]="books$ | async"></bc-book-preview-list>
+    <bc-book-preview-list [books]="(books$ | async)!"></bc-book-preview-list>
   `,
   /**
    * Container components are permitted to have just enough styles
@@ -35,11 +35,11 @@ import * as fromBooks from '@example-app/books/reducers';
 export class CollectionPageComponent implements OnInit {
   books$: Observable<Book[]>;
 
-  constructor(private store: Store<fromBooks.State>) {
-    this.books$ = store.pipe(select(fromBooks.getBookCollection));
+  constructor(private store: Store) {
+    this.books$ = store.select(fromBooks.selectBookCollection);
   }
 
   ngOnInit() {
-    this.store.dispatch(CollectionPageActions.loadCollection());
+    this.store.dispatch(CollectionPageActions.enter());
   }
 }

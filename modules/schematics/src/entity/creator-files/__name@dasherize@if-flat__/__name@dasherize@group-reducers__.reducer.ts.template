@@ -3,6 +3,8 @@ import { EntityState, EntityAdapter, createEntityAdapter } from '@ngrx/entity';
 import { <%= classify(name) %> } from '<%= featurePath(group, flat, "models", dasherize(name)) %><%= dasherize(name) %>.model';
 import * as <%= classify(name) %>Actions from '<%= featurePath(group, flat, "actions", dasherize(name)) %><%= dasherize(name) %>.actions';
 
+export const <%= pluralize(name) %>FeatureKey = '<%= pluralize(name) %>';
+
 export interface State extends EntityState<<%= classify(name) %>> {
   // additional entities state properties
 }
@@ -13,7 +15,7 @@ export const initialState: State = adapter.getInitialState({
   // additional entity state properties
 });
 
-const <%= camelize(name) %>Reducer = createReducer(
+export const reducer = createReducer(
   initialState,
   on(<%= classify(name) %>Actions.add<%= classify(name) %>,
     (state, action) => adapter.addOne(action.<%= camelize(name) %>, state)
@@ -40,16 +42,12 @@ const <%= camelize(name) %>Reducer = createReducer(
     (state, action) => adapter.removeMany(action.ids, state)
   ),
   on(<%= classify(name) %>Actions.load<%= classify(name) %>s,
-    (state, action) => adapter.addAll(action.<%= camelize(name) %>s, state)
+    (state, action) => adapter.setAll(action.<%= camelize(name) %>s, state)
   ),
   on(<%= classify(name) %>Actions.clear<%= classify(name) %>s,
     state => adapter.removeAll(state)
   ),
 );
-
-export function reducer(state: State | undefined, action: Action) {
-  return <%= camelize(name) %>Reducer(state, action);
-}
 
 export const {
   selectIds,

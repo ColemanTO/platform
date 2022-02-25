@@ -1,3 +1,4 @@
+import * as ts from 'typescript';
 import {
   Rule,
   SchematicContext,
@@ -11,7 +12,6 @@ import {
   mergeWith,
   move,
   noop,
-  template,
   url,
 } from '@angular-devkit/schematics';
 import {
@@ -23,8 +23,8 @@ import {
   insertImport,
   parseName,
   stringUtils,
-} from '@ngrx/schematics/schematics-core';
-import * as ts from 'typescript';
+  getPrefix,
+} from '../../schematics-core';
 import { Schema as EffectOptions } from './schema';
 
 function addImportToNgModule(options: EffectOptions): Rule {
@@ -74,13 +74,22 @@ function addImportToNgModule(options: EffectOptions): Rule {
       effectsName,
       relativePath
     );
+
+    const effectsSetup =
+      options.root && options.minimal ? `[]` : `[${effectsName}]`;
     const [effectsNgModuleImport] = addImportToModule(
       source,
       modulePath,
-      `EffectsModule.for${options.root ? 'Root' : 'Feature'}([${effectsName}])`,
+      `EffectsModule.for${options.root ? 'Root' : 'Feature'}(${effectsSetup})`,
       relativePath
     );
-    const changes = [effectsModuleImport, effectsImport, effectsNgModuleImport];
+
+    let changes = [effectsModuleImport, effectsNgModuleImport];
+
+    if (!options.root || (options.root && !options.minimal)) {
+      changes = changes.concat([effectsImport]);
+    }
+
     const recorder = host.beginUpdate(modulePath);
     for (const change of changes) {
       if (change instanceof InsertChange) {
@@ -97,33 +106,44 @@ function getEffectMethod(creators?: boolean) {
   return creators ? 'createEffect' : 'Effect';
 }
 
-function getEffectStart(name: string, creators?: boolean): string {
+function getEffectStart(
+  name: string,
+  effectPrefix: string,
+  creators?: boolean
+): string {
   const effectName = stringUtils.classify(name);
+  const effectMethodPrefix = stringUtils.camelize(effectPrefix);
+
   return creators
-    ? `load${effectName}s$ = createEffect(() => this.actions$.pipe(`
-    : '@Effect()\n' + `  load${effectName}s$ = this.actions$.pipe(`;
+    ? `${effectMethodPrefix}${effectName}s$ = createEffect(() => {` +
+        '\n    return this.actions$.pipe( \n'
+    : '@Effect()\n' +
+        `  ${effectMethodPrefix}${effectName}s$ = this.actions$.pipe(`;
 }
 
 function getEffectEnd(creators?: boolean) {
-  return creators ? '));' : ');';
+  return creators ? '  );\n' + '  });' : ');';
 }
 
-export default function(options: EffectOptions): Rule {
+export default function (options: EffectOptions): Rule {
   return (host: Tree, context: SchematicContext) => {
     options.path = getProjectPath(host, options);
+
+    options.prefix = getPrefix(options);
 
     if (options.module) {
       options.module = findModuleFromOptions(host, options);
     }
 
-    const parsedPath = parseName(options.path, options.name);
+    const parsedPath = parseName(options.path, options.name || '');
     options.name = parsedPath.name;
     options.path = parsedPath.path;
 
     const templateSource = apply(url('./files'), [
-      options.spec
-        ? noop()
-        : filter(path => !path.endsWith('.spec.ts.template')),
+      options.skipTests
+        ? filter((path) => !path.endsWith('.spec.ts.template'))
+        : noop(),
+      options.root && options.minimal ? filter((_) => false) : noop(),
       applyTemplates({
         ...stringUtils,
         'if-flat': (s: string) =>
@@ -132,7 +152,11 @@ export default function(options: EffectOptions): Rule {
             options.group ? 'effects' : ''
           ),
         effectMethod: getEffectMethod(options.creators),
-        effectStart: getEffectStart(options.name, options.creators),
+        effectStart: getEffectStart(
+          options.name,
+          options.prefix,
+          options.creators
+        ),
         effectEnd: getEffectEnd(options.creators),
         ...(options as object),
       } as any),

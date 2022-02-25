@@ -5,12 +5,12 @@ import {
   createReplaceChange,
   visitTSSourceFiles,
   commitChanges,
-} from '@ngrx/router-store/schematics-core';
+} from '../../schematics-core';
 
 function updateRouterStoreImport(): Rule {
   return (tree: Tree) => {
-    visitTSSourceFiles(tree, sourceFile => {
-      let changes: ReplaceChange[] = [];
+    visitTSSourceFiles(tree, (sourceFile) => {
+      const changes: ReplaceChange[] = [];
       ts.forEachChild(sourceFile, function findDecorator(node) {
         if (!ts.isDecorator(node)) {
           ts.forEachChild(node, findDecorator);
@@ -26,8 +26,10 @@ function updateRouterStoreImport(): Rule {
           ) {
             node.initializer.elements
               .filter(ts.isIdentifier)
-              .filter(element => element.text === 'StoreRouterConnectingModule')
-              .forEach(element => {
+              .filter(
+                (element) => element.text === 'StoreRouterConnectingModule'
+              )
+              .forEach((element) => {
                 changes.push(
                   createReplaceChange(
                     sourceFile,
@@ -48,6 +50,6 @@ function updateRouterStoreImport(): Rule {
   };
 }
 
-export default function(): Rule {
+export default function (): Rule {
   return chain([updateRouterStoreImport()]);
 }

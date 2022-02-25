@@ -12,18 +12,27 @@ describe('Effects metadata', () => {
         @Effect({ dispatch: false })
         c: any;
         d = createEffect(() => of({ type: 'a' }), { dispatch: false });
-        @Effect({ dispatch: false, resubscribeOnError: false })
+        @Effect({ dispatch: false, useEffectsErrorHandler: false })
         e: any;
         z: any;
+        f = createEffect(() => () => of({ type: 'a' }));
+        g = createEffect(() => () => of({ type: 'a' }), { dispatch: false });
+        h = createEffect(() => () => of({ type: 'a' }), {
+          dispatch: true,
+          useEffectsErrorHandler: false,
+        });
       }
 
       const mock = new Fixture();
       const expected: EffectMetadata<Fixture>[] = [
-        { propertyName: 'a', dispatch: true, resubscribeOnError: true },
-        { propertyName: 'c', dispatch: false, resubscribeOnError: true },
-        { propertyName: 'b', dispatch: true, resubscribeOnError: true },
-        { propertyName: 'd', dispatch: false, resubscribeOnError: true },
-        { propertyName: 'e', dispatch: false, resubscribeOnError: false },
+        { propertyName: 'a', dispatch: true, useEffectsErrorHandler: true },
+        { propertyName: 'c', dispatch: false, useEffectsErrorHandler: true },
+        { propertyName: 'b', dispatch: true, useEffectsErrorHandler: true },
+        { propertyName: 'd', dispatch: false, useEffectsErrorHandler: true },
+        { propertyName: 'e', dispatch: false, useEffectsErrorHandler: false },
+        { propertyName: 'f', dispatch: true, useEffectsErrorHandler: true },
+        { propertyName: 'g', dispatch: false, useEffectsErrorHandler: true },
+        { propertyName: 'h', dispatch: true, useEffectsErrorHandler: false },
       ];
 
       expect(getSourceMetadata(mock)).toEqual(
@@ -45,20 +54,29 @@ describe('Effects metadata', () => {
         e: any;
         f = createEffect(() => of({ type: 'f' }), { dispatch: false });
         g = createEffect(() => of({ type: 'g' }), {
-          resubscribeOnError: false,
+          useEffectsErrorHandler: false,
+        });
+        h = createEffect(() => () => of({ type: 'a' }));
+        j = createEffect(() => () => of({ type: 'a' }), { dispatch: false });
+        k = createEffect(() => () => of({ type: 'a' }), {
+          dispatch: true,
+          useEffectsErrorHandler: false,
         });
       }
 
       const mock = new Fixture();
 
       expect(getEffectsMetadata(mock)).toEqual({
-        a: { dispatch: true, resubscribeOnError: true },
-        c: { dispatch: true, resubscribeOnError: true },
-        e: { dispatch: false, resubscribeOnError: true },
-        b: { dispatch: true, resubscribeOnError: true },
-        d: { dispatch: true, resubscribeOnError: true },
-        f: { dispatch: false, resubscribeOnError: true },
-        g: { dispatch: true, resubscribeOnError: false },
+        a: { dispatch: true, useEffectsErrorHandler: true },
+        c: { dispatch: true, useEffectsErrorHandler: true },
+        e: { dispatch: false, useEffectsErrorHandler: true },
+        b: { dispatch: true, useEffectsErrorHandler: true },
+        d: { dispatch: true, useEffectsErrorHandler: true },
+        f: { dispatch: false, useEffectsErrorHandler: true },
+        g: { dispatch: true, useEffectsErrorHandler: false },
+        h: { dispatch: true, useEffectsErrorHandler: true },
+        j: { dispatch: false, useEffectsErrorHandler: true },
+        k: { dispatch: true, useEffectsErrorHandler: false },
       });
     });
 

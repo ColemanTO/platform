@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { Actions, ofType, createEffect } from '@ngrx/effects';
 import { of } from 'rxjs';
@@ -19,11 +19,11 @@ export class AuthEffects {
   login$ = createEffect(() =>
     this.actions$.pipe(
       ofType(LoginPageActions.login),
-      map(action => action.credentials),
+      map((action) => action.credentials),
       exhaustMap((auth: Credentials) =>
         this.authService.login(auth).pipe(
-          map(user => AuthApiActions.loginSuccess({ user })),
-          catchError(error => of(AuthApiActions.loginFailure({ error })))
+          map((user) => AuthApiActions.loginSuccess({ user })),
+          catchError((error) => of(AuthApiActions.loginFailure({ error })))
         )
       )
     )
@@ -42,7 +42,7 @@ export class AuthEffects {
     () =>
       this.actions$.pipe(
         ofType(AuthApiActions.loginRedirect, AuthActions.logout),
-        tap(authed => {
+        tap(() => {
           this.router.navigate(['/login']);
         })
       ),
@@ -61,11 +61,8 @@ export class AuthEffects {
 
         return dialogRef.afterClosed();
       }),
-      map(
-        result =>
-          result
-            ? AuthActions.logout()
-            : AuthActions.logoutConfirmationDismiss()
+      map((result) =>
+        result ? AuthActions.logout() : AuthActions.logoutConfirmationDismiss()
       )
     )
   );

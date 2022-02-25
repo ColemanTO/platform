@@ -54,15 +54,6 @@ describe('BooksReducer', () => {
       const differentBook2 = { ...books[0], foo: 'bar' };
       const createAction = action({ books: [books[1], differentBook2] });
 
-      const expectedResult = {
-        ids: [...booksInitialState.ids, books[1].id],
-        entities: {
-          ...booksInitialState.entities,
-          [books[1].id]: books[1],
-        },
-        selectedBookId: null,
-      };
-
       const result = reducer(booksInitialState, createAction);
 
       expect(result).toMatchSnapshot();
@@ -130,9 +121,9 @@ describe('BooksReducer', () => {
   });
 
   describe('Selectors', () => {
-    describe('getSelectedId', () => {
+    describe('selectId', () => {
       it('should return the selected id', () => {
-        const result = fromBooks.getSelectedId({
+        const result = fromBooks.selectId({
           ...initialState,
           selectedBookId: book1.id,
         });

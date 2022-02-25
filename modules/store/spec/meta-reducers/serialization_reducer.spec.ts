@@ -1,27 +1,32 @@
+import { Component } from '@angular/core';
 import { serializationCheckMetaReducer } from '../../src/meta-reducers';
 
 describe('serializationCheckMetaReducer:', () => {
+  class AComponent {}
+  Object.defineProperty(AComponent, 'ɵcmp', {});
+
   const serializables: Record<string, any> = {
-    number: { value: 4 },
-    boolean: { value: true },
-    string: { value: 'foobar' },
-    array: { value: [1, 2, 3] },
-    object: { value: {} },
-    nested: { value: { number: 7, array: ['n', 'g', 'r', 'x'] } },
-    null: { value: null },
-    undefined: { value: undefined },
+    aNumber: { value: 4 },
+    aBoolean: { value: true },
+    aString: { value: 'foobar' },
+    anArray: { value: [1, 2, 3] },
+    anObject: { value: {} },
+    aNested: { value: { aNumber: 7, anArray: ['n', 'g', 'r', 'x'] } },
+    aNull: { value: null },
+    anUndefined: { value: undefined },
+    aComponent: AComponent, // components should not throw (because these are ignored)
   };
 
   const unSerializables: Record<string, any> = {
     date: { value: new Date() },
     map: { value: new Map() },
     set: { value: new Set() },
-    class: { value: new class {}() },
+    class: { value: new (class {})() },
     function: { value: () => {} },
   };
 
   describe('serializable:', () => {
-    Object.keys(serializables).forEach(key => {
+    Object.keys(serializables).forEach((key) => {
       it(`action with ${key} should not throw`, () => {
         expect(() =>
           invokeActionReducer({ type: 'valid', payload: serializables[key] })
@@ -35,7 +40,7 @@ describe('serializationCheckMetaReducer:', () => {
   });
 
   describe('unserializable:', () => {
-    Object.keys(unSerializables).forEach(key => {
+    Object.keys(unSerializables).forEach((key) => {
       it(`action with ${key} should throw`, () => {
         expect(() =>
           invokeActionReducer({ type: 'valid', payload: unSerializables[key] })
@@ -62,7 +67,7 @@ describe('serializationCheckMetaReducer:', () => {
           payload: { foo: { bar: unSerializables['date'] } },
         })
       ).toThrowError(
-        /Detected unserializable action at "payload.foo.bar.value"/
+        `Detected unserializable action at "payload.foo.bar.value". https://ngrx.io/guide/store/configuration/runtime-checks#strictactionserializability`
       );
     });
   });
@@ -80,13 +85,13 @@ describe('serializationCheckMetaReducer:', () => {
       ).toThrowError(/Detected unserializable state at "foo.bar.value"/);
     });
 
-    it('should not throw if state is null', () => {
+    it('should throw if state is null', () => {
       expect(() => invokeStateReducer(null)).toThrowError(
-        /Detected unserializable state at "root"/
+        `Detected unserializable state at "root". https://ngrx.io/guide/store/configuration/runtime-checks#strictstateserializability`
       );
     });
 
-    it('should not throw if state is undefined', () => {
+    it('should throw if state is undefined', () => {
       expect(() => invokeStateReducer(undefined)).toThrowError(
         /Detected unserializable state at "root"/
       );
@@ -94,16 +99,16 @@ describe('serializationCheckMetaReducer:', () => {
   });
 
   function invokeActionReducer(action: any, checkIsOn = true) {
-    serializationCheckMetaReducer(state => state, {
-      action: checkIsOn,
-      state: false,
+    serializationCheckMetaReducer((state) => state, {
+      action: () => checkIsOn,
+      state: () => false,
     })(undefined, action);
   }
 
   function invokeStateReducer(nextState?: any, checkIsOn = true) {
     serializationCheckMetaReducer(() => nextState, {
-      state: checkIsOn,
-      action: false,
+      state: () => checkIsOn,
+      action: () => false,
     })(undefined, {
       type: 'invokeReducer',
     });

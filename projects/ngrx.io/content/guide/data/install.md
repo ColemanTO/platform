@@ -10,7 +10,7 @@ npm install @ngrx/data --save
 
 ## Installing with `yarn`
 
-For more information on using `yarn` check out the docs <a href="https://yarnpkg.com/docs/usage" target="_blank">here</a>.
+For more information on using `yarn` check out the docs <a href="https://yarnpkg.com/getting-started/usage#installing-all-the-dependencies" target="_blank">here</a>.
 
 ```sh
 yarn add @ngrx/data
@@ -21,7 +21,7 @@ yarn add @ngrx/data
 If your project is using the Angular CLI 6+ then you can install the Data package to your project with the following `ng add` command <a href="https://angular.io/cli/add" target="_blank">(details here)</a>:
 
 ```sh
-ng add @ngrx/data
+ng add @ngrx/data@latest
 ```
 
 ### Optional `ng add` flags
@@ -30,6 +30,7 @@ ng add @ngrx/data
 * module - name of file containing the module that you wish to add the import for the `EntityDataModule` to. Can also include the relative path to the file. For example, `src/app/app.module.ts`.
 * effects - if `false` it will use the `EntityDataModuleWithoutEffects` module instead of the default `EntityDataModule`.
 * migrateNgRxData - if `true` it will replace the `ngrx-data` module with the `@ngrx/data` module.
+* entityConfig - if `false` it will not create and declare the `entity-metadata` file.
 
 This command will automate the following steps:
 

@@ -21,11 +21,13 @@ import {
   getProjectPath,
   findModuleFromOptions,
   parseName,
-} from '@ngrx/schematics/schematics-core';
+  getProject,
+} from '../../schematics-core';
 import { Schema as EntityOptions } from './schema';
 
-export default function(options: EntityOptions): Rule {
+export default function (options: EntityOptions): Rule {
   return (host: Tree, context: SchematicContext) => {
+    const projectConfig = getProject(host, options);
     options.path = getProjectPath(host, options);
 
     const parsedPath = parseName(options.path, options.name);
@@ -49,9 +51,9 @@ export default function(options: EntityOptions): Rule {
     };
 
     const commonTemplates = apply(url('./common-files'), [
-      options.spec
-        ? noop()
-        : filter(path => !path.endsWith('.spec.ts.template')),
+      options.skipTests
+        ? filter((path) => !path.endsWith('.spec.ts.template'))
+        : noop(),
       applyTemplates(templateOptions),
       move(parsedPath.path),
     ]);
@@ -63,7 +65,7 @@ export default function(options: EntityOptions): Rule {
 
     return chain([
       addReducerToState({ ...options, plural: true }),
-      addReducerImportToNgModule({ ...options }),
+      addReducerImportToNgModule({ ...options, plural: true }),
       branchAndMerge(
         chain([mergeWith(commonTemplates), mergeWith(templateSource)])
       ),

@@ -8,16 +8,16 @@ When the NgRx Data library sees an action for an entity _persistence operation_,
 
 A data service is an instance of a class that implements the `EntityCollectionDataService`.
 This interface supports a basic set of CRUD operations for an entity.
-Eachthat return `Observables`:
+Each that return `Observables`:
 
-| Method                                                   | Meaning                               |
-| -------------------------------------------------------- | ------------------------------------- |
-| `add(entity: T)`                                         | Add a new entity                      |
-| `delete(id: any)`                                        | Delete an entity by primary key value |
-| `getAll()`                                               | Get all instances of this entity type |
-| `getById(id: any)`                                       | Get an entity by its primary key      |
-| `getWithQuery(queryParams: QueryParams` &#x7c; `string)` | Get entities that satisfy the query   |
-| `update(update: Update<T>)`                              | Update an existing entity             |
+| Method                                                   | Meaning                               | HTTP Method with endpoint        |
+| -------------------------------------------------------- | ------------------------------------- | -------------------------------- |
+| `add(entity: T): Observable<T>`                          | Add a new entity                      | `POST` /api/hero/                |
+| `delete(id: number` &#x7c; `string): Observable<number` &#x7c; `string>` | Delete an entity by primary key value | `DELETE` /api/hero/5             |
+| `getAll(): Observable<T[]>`                              | Get all instances of this entity type | `GET` /api/heroes/               |
+| `getById(id: number` &#x7c; `string): Observable<T>`     | Get an entity by its primary key      | `GET` /api/hero/5                |
+| `getWithQuery(queryParams: QueryParams` &#x7c; `string): Observable<T[]>` | Get entities that satisfy the query   | `GET` /api/heroes/?name=bombasto |
+| `update(update: Update<T>): Observable<T>`               | Update an existing entity             | `PUT` /api/hero/5                |
 
 <div class="alert is-helpful">
 
@@ -34,6 +34,10 @@ unmentioned properties should retain their current values.
 
 The default data service methods return the `Observables` returned by the corresponding Angular `HttpClient` methods.
 
+Your API should return an object in the shape of the return type for each data service method. For example: when calling `.add(entity)` your API
+should create the entity and then return the full entity matching `T` as that is the value that will be set as the record in the store for that entities primary
+key. The one method that differs from the others is `delete`. `delete` requires a response type of the entities primary key, `string | number`, instead of the full object, `T`, that was deleted.
+
 <div class="alert is-helpful">
 
 If you create your own data service alternatives, they should return similar `Observables`.
@@ -48,7 +52,7 @@ You can add custom data services to it by creating instances of those classes an
 
 1.  register a single data service by entity name with the `registerService()` method.
 
-1.  register several data services at the same time with by calling `registerServices` with an _entity-name/service_ map.
+2.  register several data services at the same time with by calling `registerServices` with an _entity-name/service_ map.
 
 <div class="alert is-helpful">
 
@@ -83,7 +87,7 @@ The `QUERY_ALL` action to get all heroes would result in an HTTP GET request to 
 The `DefaultDataService` doesn't know how to pluralize the entity type name.
 It doesn't even know how to create the base resource names.
 
-It relies on an injected `HttpUrlGenerator` service produce the appropriate endpoints.
+It relies on an injected `HttpUrlGenerator` service to produce the appropriate endpoints.
 And the default implementation of the `HttpUrlGenerator` relies on the
 `Pluralizer` service to produce the plural collection resource names.
 
@@ -101,7 +105,7 @@ The shared configuration values are almost always specific to the application an
 The NgRx Data library defines a `DefaultDataServiceConfig` for 
 conveying shared configuration to an entity collection data service.
 
-The most important configuration property, `root`, returns the _root_ of every web api URL, the parts that come before the entity resource name.
+The most important configuration property, `root`, returns the _root_ of every web api URL, the parts that come before the entity resource name. If you are using a remote API, this value can include the protocol, domain, port, and root path, such as `https://my-api-domain.com:8000/api/v1`.
 
 For a `DefaultDataService<T>`, the default value is `'api'`, which results in URLs such as `api/heroes`.
 
@@ -121,7 +125,7 @@ First, create a custom configuration object of type `DefaultDataServiceConfig` :
 
 ```typescript
 const defaultDataServiceConfig: DefaultDataServiceConfig = {
-  root: 'api',
+  root: 'https://my-api-domain.com:8000/api/v1',
   timeout: 3000, // request timeout
 }
 ```

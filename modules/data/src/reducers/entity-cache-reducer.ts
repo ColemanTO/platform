@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { Action, ActionReducer } from '@ngrx/store';
 
 import { EntityAction } from '../actions/entity-action';
-import { EntityActionDataServiceError } from '../dataservices/data-service-error';
 import { EntityCache } from './entity-cache';
 
 import {
@@ -40,7 +39,7 @@ export class EntityCacheReducerFactory {
   ) {}
 
   /**
-   * Create the ngrx-data entity cache reducer which either responds to entity cache level actions
+   * Create the @ngrx/data entity cache reducer which either responds to entity cache level actions
    * or (more commonly) delegates to an EntityCollectionReducer based on the action.payload.entityName.
    */
   create(): ActionReducer<EntityCache, Action> {
@@ -127,7 +126,7 @@ export class EntityCacheReducerFactory {
     entityCache: EntityCache,
     action: ClearCollections
   ) {
-    // tslint:disable-next-line:prefer-const
+    // eslint-disable-next-line prefer-const
     let { collections, tag } = action.payload;
     const entityOp = EntityOp.REMOVE_ALL;
 
@@ -185,11 +184,11 @@ export class EntityCacheReducerFactory {
     entityCache: EntityCache,
     action: MergeQuerySet
   ) {
-    // tslint:disable-next-line:prefer-const
+    // eslint-disable-next-line prefer-const
     let { mergeStrategy, querySet, tag } = action.payload;
     mergeStrategy =
       mergeStrategy === null ? MergeStrategy.PreserveChanges : mergeStrategy;
-    const entityOp = EntityOp.UPSERT_MANY;
+    const entityOp = EntityOp.QUERY_MANY_SUCCESS;
 
     const entityNames = Object.keys(querySet);
     entityCache = entityNames.reduce((newCache, entityName) => {
@@ -214,16 +213,11 @@ export class EntityCacheReducerFactory {
     entityCache: EntityCache,
     action: SaveEntities
   ) {
-    const {
-      changeSet,
-      correlationId,
-      isOptimistic,
-      mergeStrategy,
-      tag,
-    } = action.payload;
+    const { changeSet, correlationId, isOptimistic, mergeStrategy, tag } =
+      action.payload;
 
     try {
-      changeSet.changes.forEach(item => {
+      changeSet.changes.forEach((item) => {
         const entityName = item.entityName;
         const payload = {
           entityName,
@@ -244,7 +238,7 @@ export class EntityCacheReducerFactory {
           throw act.payload.error;
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       action.payload.error = error;
     }
 
@@ -284,7 +278,9 @@ export class EntityCacheReducerFactory {
 
     // This implementation can only clear the loading flag for the collections involved
     // If the save was optimistic, you'll have to compensate to fix the cache as you think necessary
-    const entityNames = originalChangeSet.changes.map(item => item.entityName);
+    const entityNames = originalChangeSet.changes.map(
+      (item) => item.entityName
+    );
     return this.clearLoadingFlags(entityCache, entityNames);
   }
 
@@ -292,15 +288,10 @@ export class EntityCacheReducerFactory {
     entityCache: EntityCache,
     action: SaveEntitiesSuccess
   ) {
-    const {
-      changeSet,
-      correlationId,
-      isOptimistic,
-      mergeStrategy,
-      tag,
-    } = action.payload;
+    const { changeSet, correlationId, isOptimistic, mergeStrategy, tag } =
+      action.payload;
 
-    changeSet.changes.forEach(item => {
+    changeSet.changes.forEach((item) => {
       const entityName = item.entityName;
       const payload = {
         entityName,
@@ -343,16 +334,15 @@ export class EntityCacheReducerFactory {
   ) {
     const entityName = action.payload.entityName;
     const collection = cache[entityName];
-    const reducer = this.entityCollectionReducerRegistry.getOrCreateReducer(
-      entityName
-    );
+    const reducer =
+      this.entityCollectionReducerRegistry.getOrCreateReducer(entityName);
 
     let newCollection: EntityCollection;
     try {
       newCollection = collection
         ? reducer(collection, action)
         : reducer(this.entityCollectionCreator.create(entityName), action);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(error);
       action.payload.error = error;
     }
@@ -365,7 +355,7 @@ export class EntityCacheReducerFactory {
   /** Ensure loading is false for every collection in entityNames */
   private clearLoadingFlags(entityCache: EntityCache, entityNames: string[]) {
     let isMutated = false;
-    entityNames.forEach(entityName => {
+    entityNames.forEach((entityName) => {
       const collection = entityCache[entityName];
       if (collection.loading) {
         if (!isMutated) {

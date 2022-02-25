@@ -1,9 +1,5 @@
 import { Injectable, Optional } from '@angular/core';
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpParams,
-} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 
 import { Observable, throwError } from 'rxjs';
 import { catchError, delay, map, timeout } from 'rxjs/operators';
@@ -64,7 +60,7 @@ export class EntityCacheDataService {
     let result$: Observable<ChangeSet> = this.http
       .post<ChangeSet>(url, changeSet)
       .pipe(
-        map(result => this.restoreUpdates(result)),
+        map((result) => this.restoreUpdates(result)),
         catchError(this.handleError({ method: 'POST', url, data: changeSet }))
       );
 
@@ -83,7 +79,7 @@ export class EntityCacheDataService {
   protected handleError(reqData: RequestData) {
     return (err: any) => {
       const error = new DataServiceError(err, reqData);
-      return throwError(error);
+      return throwError(() => error);
     };
   }
 
@@ -106,12 +102,12 @@ export class EntityCacheDataService {
       return changeSet;
     }
     let hasMutated = false;
-    changes = changes.map(item => {
+    changes = changes.map((item) => {
       if (item.op === updateOp && item.entities.length > 0) {
         hasMutated = true;
         return {
           ...item,
-          entities: (item as ChangeSetUpdate).entities.map(u => u.changes),
+          entities: (item as ChangeSetUpdate).entities.map((u) => u.changes),
         };
       } else {
         return item;
@@ -134,7 +130,7 @@ export class EntityCacheDataService {
       return changeSet;
     }
     let hasMutated = false;
-    changes = changes.map(item => {
+    changes = changes.map((item) => {
       if (item.op === updateOp) {
         // These are entities, not Updates; convert back to Updates
         hasMutated = true;
@@ -160,8 +156,8 @@ export class EntityCacheDataService {
   protected getIdSelector(entityName: string) {
     let idSelector = this.idSelectors[entityName];
     if (!idSelector) {
-      idSelector = this.entityDefinitionService.getDefinition(entityName)
-        .selectId;
+      idSelector =
+        this.entityDefinitionService.getDefinition(entityName).selectId;
       this.idSelectors[entityName] = idSelector;
     }
     return idSelector;

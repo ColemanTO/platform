@@ -1,4 +1,4 @@
-import { ActionReducer } from '../models';
+import { ActionReducer, Action } from '../models';
 import {
   isPlainObject,
   isUndefined,
@@ -7,21 +7,23 @@ import {
   isBoolean,
   isString,
   isArray,
+  RUNTIME_CHECK_URL,
+  isComponent,
 } from './utils';
 
 export function serializationCheckMetaReducer(
   reducer: ActionReducer<any, any>,
-  checks: { action: boolean; state: boolean }
+  checks: { action: (action: Action) => boolean; state: () => boolean }
 ): ActionReducer<any, any> {
-  return function(state, action) {
-    if (checks.action) {
+  return function (state, action) {
+    if (checks.action(action)) {
       const unserializableAction = getUnserializable(action);
       throwIfUnserializable(unserializableAction, 'action');
     }
 
     const nextState = reducer(state, action);
 
-    if (checks.state) {
+    if (checks.state()) {
       const unserializableState = getUnserializable(nextState);
       throwIfUnserializable(unserializableState, 'state');
     }
@@ -49,6 +51,11 @@ function getUnserializable(
     }
 
     const value = (target as any)[key];
+
+    // Ignore Ivy components
+    if (isComponent(value)) {
+      return result;
+    }
 
     if (
       isUndefined(value) ||
@@ -82,7 +89,7 @@ function throwIfUnserializable(
 
   const unserializablePath = unserializable.path.join('.');
   const error: any = new Error(
-    `Detected unserializable ${context} at "${unserializablePath}"`
+    `Detected unserializable ${context} at "${unserializablePath}". ${RUNTIME_CHECK_URL}#strict${context}serializability`
   );
   error.value = unserializable.value;
   error.unserializablePath = unserializablePath;

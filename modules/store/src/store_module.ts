@@ -5,6 +5,8 @@ import {
   OnDestroy,
   InjectionToken,
   Injector,
+  Optional,
+  SkipSelf,
 } from '@angular/core';
 import {
   Action,
@@ -16,7 +18,7 @@ import {
   MetaReducer,
   RuntimeChecks,
 } from './models';
-import { compose, combineReducers, createReducerFactory } from './utils';
+import { combineReducers, createReducerFactory } from './utils';
 import {
   INITIAL_STATE,
   INITIAL_REDUCERS,
@@ -34,6 +36,8 @@ import {
   _FEATURE_CONFIGS,
   USER_PROVIDED_META_REDUCERS,
   _RESOLVED_META_REDUCERS,
+  _ROOT_STORE_GUARD,
+  _ACTION_TYPE_UNIQUENESS_CHECK,
 } from './tokens';
 import { ACTIONS_SUBJECT_PROVIDERS, ActionsSubject } from './actions_subject';
 import {
@@ -47,7 +51,10 @@ import {
 } from './scanned_actions_subject';
 import { STATE_PROVIDERS } from './state';
 import { STORE_PROVIDERS, Store } from './store';
-import { provideRuntimeChecks } from './runtime_checks';
+import {
+  provideRuntimeChecks,
+  checkForActionTypeUniqueness,
+} from './runtime_checks';
 
 @NgModule({})
 export class StoreRootModule {
@@ -55,7 +62,13 @@ export class StoreRootModule {
     actions$: ActionsSubject,
     reducer$: ReducerObservable,
     scannedActions$: ScannedActionsSubject,
-    store: Store<any>
+    store: Store<any>,
+    @Optional()
+    @Inject(_ROOT_STORE_GUARD)
+    guard: any,
+    @Optional()
+    @Inject(_ACTION_TYPE_UNIQUENESS_CHECK)
+    actionCheck: any
   ) {}
 }
 
@@ -65,11 +78,15 @@ export class StoreFeatureModule implements OnDestroy {
     @Inject(_STORE_FEATURES) private features: StoreFeature<any, any>[],
     @Inject(FEATURE_REDUCERS) private featureReducers: ActionReducerMap<any>[],
     private reducerManager: ReducerManager,
-    root: StoreRootModule
+    root: StoreRootModule,
+    @Optional()
+    @Inject(_ACTION_TYPE_UNIQUENESS_CHECK)
+    actionCheck: any
   ) {
     const feats = features.map((feature, index) => {
       const featureReducerCollection = featureReducers.shift();
-      const reducers = featureReducerCollection /*TODO(#823)*/![index];
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const reducers = featureReducerCollection! /*TODO(#823)*/[index];
 
       return {
         ...feature,
@@ -81,6 +98,7 @@ export class StoreFeatureModule implements OnDestroy {
     reducerManager.addFeatures(feats);
   }
 
+  // eslint-disable-next-line @angular-eslint/contextual-lifecycle
   ngOnDestroy() {
     this.reducerManager.removeFeatures(this.features);
   }
@@ -89,12 +107,20 @@ export class StoreFeatureModule implements OnDestroy {
 export interface StoreConfig<T, V extends Action = Action> {
   initialState?: InitialState<T>;
   reducerFactory?: ActionReducerFactory<T, V>;
-  metaReducers?: MetaReducer<T, V>[];
+  metaReducers?: MetaReducer<{ [P in keyof T]: T[P] }, V>[];
 }
 
 export interface RootStoreConfig<T, V extends Action = Action>
   extends StoreConfig<T, V> {
   runtimeChecks?: Partial<RuntimeChecks>;
+}
+
+/**
+ * An object with the name and the reducer for the feature.
+ */
+export interface FeatureSlice<T, V extends Action = Action> {
+  name: string;
+  reducer: ActionReducer<T, V>;
 }
 
 @NgModule({})
@@ -112,6 +138,11 @@ export class StoreModule {
     return {
       ngModule: StoreRootModule,
       providers: [
+        {
+          provide: _ROOT_STORE_GUARD,
+          useFactory: _provideForRootGuard,
+          deps: [[Store, new Optional(), new SkipSelf()]],
+        },
         { provide: _INITIAL_STATE, useValue: config.initialState },
         {
           provide: INITIAL_STATE,
@@ -155,6 +186,7 @@ export class StoreModule {
         STATE_PROVIDERS,
         STORE_PROVIDERS,
         provideRuntimeChecks(config.runtimeChecks),
+        checkForActionTypeUniqueness(),
       ],
     };
   }
@@ -169,9 +201,12 @@ export class StoreModule {
     reducer: ActionReducer<T, V> | InjectionToken<ActionReducer<T, V>>,
     config?: StoreConfig<T, V> | InjectionToken<StoreConfig<T, V>>
   ): ModuleWithProviders<StoreFeatureModule>;
+  static forFeature<T, V extends Action = Action>(
+    slice: FeatureSlice<T, V>
+  ): ModuleWithProviders<StoreFeatureModule>;
   static forFeature(
-    featureName: string,
-    reducers:
+    featureNameOrSlice: string | FeatureSlice<any, any>,
+    reducers?:
       | ActionReducerMap<any, any>
       | InjectionToken<ActionReducerMap<any, any>>
       | ActionReducer<any, any>
@@ -184,13 +219,16 @@ export class StoreModule {
         {
           provide: _FEATURE_CONFIGS,
           multi: true,
-          useValue: config,
+          useValue: featureNameOrSlice instanceof Object ? {} : config,
         },
         {
           provide: STORE_FEATURES,
           multi: true,
           useValue: {
-            key: featureName,
+            key:
+              featureNameOrSlice instanceof Object
+                ? featureNameOrSlice.name
+                : featureNameOrSlice,
             reducerFactory:
               !(config instanceof InjectionToken) && config.reducerFactory
                 ? config.reducerFactory
@@ -210,7 +248,14 @@ export class StoreModule {
           deps: [Injector, _FEATURE_CONFIGS, STORE_FEATURES],
           useFactory: _createFeatureStore,
         },
-        { provide: _FEATURE_REDUCERS, multi: true, useValue: reducers },
+        {
+          provide: _FEATURE_REDUCERS,
+          multi: true,
+          useValue:
+            featureNameOrSlice instanceof Object
+              ? featureNameOrSlice.reducer
+              : reducers,
+        },
         {
           provide: _FEATURE_REDUCERS_TOKEN,
           multi: true,
@@ -227,6 +272,7 @@ export class StoreModule {
           ],
           useFactory: _createFeatureReducers,
         },
+        checkForActionTypeUniqueness(),
       ],
     };
   }
@@ -264,7 +310,7 @@ export function _createFeatureReducers(
   injector: Injector,
   reducerCollection: ActionReducerMap<any, any>[]
 ) {
-  const reducers = reducerCollection.map(reducer => {
+  const reducers = reducerCollection.map((reducer) => {
     return reducer instanceof InjectionToken ? injector.get(reducer) : reducer;
   });
 
@@ -284,4 +330,13 @@ export function _concatMetaReducers(
   userProvidedMetaReducers: MetaReducer[]
 ): MetaReducer[] {
   return metaReducers.concat(userProvidedMetaReducers);
+}
+
+export function _provideForRootGuard(store: Store<any>): any {
+  if (store) {
+    throw new TypeError(
+      `StoreModule.forRoot() called twice. Feature modules should use StoreModule.forFeature() instead.`
+    );
+  }
+  return 'guarded';
 }

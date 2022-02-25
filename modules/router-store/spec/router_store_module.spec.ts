@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Router, RouterEvent } from '@angular/router';
+import { Router, RouterEvent, NavigationEnd } from '@angular/router';
 import {
   routerReducer,
   RouterReducerState,
@@ -11,7 +11,7 @@ import {
   DefaultRouterStateSerializer,
 } from '@ngrx/router-store';
 import { select, Store, ActionsSubject } from '@ngrx/store';
-import { withLatestFrom, filter } from 'rxjs/operators';
+import { withLatestFrom, filter, skip } from 'rxjs/operators';
 
 import { createTestModule } from './utils';
 
@@ -36,9 +36,9 @@ describe('Router Store Module', () => {
         },
       });
 
-      store = TestBed.get(Store);
-      router = TestBed.get(Router);
-      storeRouterConnectingModule = TestBed.get(StoreRouterConnectingModule);
+      store = TestBed.inject(Store);
+      router = TestBed.inject(Router);
+      storeRouterConnectingModule = TestBed.inject(StoreRouterConnectingModule);
     });
 
     it('should have custom state key as own property', () => {
@@ -48,10 +48,7 @@ describe('Router Store Module', () => {
     it('should call navigateIfNeeded with args selected by custom state key', (done: any) => {
       let logs: any[] = [];
       store
-        .pipe(
-          select(customStateKey),
-          withLatestFrom(store)
-        )
+        .pipe(select(customStateKey), withLatestFrom(store))
         .subscribe(([routerStoreState, storeState]) => {
           logs.push([routerStoreState, storeState]);
         });
@@ -98,9 +95,9 @@ describe('Router Store Module', () => {
         },
       });
 
-      store = TestBed.get(Store);
-      router = TestBed.get(Router);
-      storeRouterConnectingModule = TestBed.get(StoreRouterConnectingModule);
+      store = TestBed.inject(Store);
+      router = TestBed.inject(Router);
+      storeRouterConnectingModule = TestBed.inject(StoreRouterConnectingModule);
     });
 
     it('should have same state selector as own property', () => {
@@ -112,10 +109,7 @@ describe('Router Store Module', () => {
     it('should call navigateIfNeeded with args selected by custom state selector', (done: any) => {
       let logs: any[] = [];
       store
-        .pipe(
-          select(customStateSelector),
-          withLatestFrom(store)
-        )
+        .pipe(select(customStateSelector), withLatestFrom(store))
         .subscribe(([routerStoreState, storeState]) => {
           logs.push([routerStoreState, storeState]);
         });
@@ -141,7 +135,7 @@ describe('Router Store Module', () => {
   });
 
   describe('routerState', () => {
-    function setup(routerState: RouterState, serializer?: any) {
+    function setup(routerState?: RouterState, serializer?: any) {
       createTestModule({
         reducers: {},
         config: {
@@ -151,9 +145,9 @@ describe('Router Store Module', () => {
       });
 
       return {
-        actions: TestBed.get(ActionsSubject) as ActionsSubject,
-        router: TestBed.get(Router) as Router,
-        serializer: TestBed.get(RouterStateSerializer) as RouterStateSerializer,
+        actions: TestBed.inject(ActionsSubject),
+        router: TestBed.inject(Router),
+        serializer: TestBed.inject(RouterStateSerializer),
       };
     }
 
@@ -161,18 +155,27 @@ describe('Router Store Module', () => {
       a.payload && a.payload.event;
 
     describe('Full', () => {
-      it('should dispatch the full event', async () => {
+      it('should dispatch the full event', (done: any) => {
         const { actions, router } = setup(RouterState.Full);
-        actions
-          .pipe(filter(onlyRouterActions))
-          .subscribe(({ payload }) =>
-            expect(payload.event instanceof RouterEvent).toBe(true)
-          );
+        actions.pipe(filter(onlyRouterActions)).subscribe(({ payload }) => {
+          expect(payload.event instanceof RouterEvent).toBe(true);
+          done();
+        });
 
-        await router.navigateByUrl('/');
+        router.navigateByUrl('/');
       });
 
-      it('should use the default router serializer', () => {
+      it('should use the minimal router serializer by default', () => {
+        const { serializer } = setup();
+        expect(serializer).toEqual(new MinimalRouterStateSerializer());
+      });
+
+      it('should use the minimal router serializer if minimal state option is passed in', () => {
+        const { serializer } = setup(RouterState.Minimal);
+        expect(serializer).toEqual(new MinimalRouterStateSerializer());
+      });
+
+      it('should use the default router serializer if full state option is passed in', () => {
         const { serializer } = setup(RouterState.Full);
         expect(serializer).toEqual(new DefaultRouterStateSerializer());
       });
@@ -187,16 +190,41 @@ describe('Router Store Module', () => {
     });
 
     describe('Minimal', () => {
-      it('should dispatch the navigation id with url', async () => {
+      it('should dispatch the navigation id with url', (done: any) => {
         const { actions, router } = setup(RouterState.Minimal);
         actions
           .pipe(filter(onlyRouterActions))
           .subscribe(({ payload }: any) => {
             expect(payload.event instanceof RouterEvent).toBe(false);
             expect(payload.event).toEqual({ id: 1, url: '/' });
+            done();
           });
 
-        await router.navigateByUrl('/');
+        router.navigateByUrl('/');
+      });
+
+      it('should dispatch the navigation with urlAfterRedirects', (done: any) => {
+        const { actions, router } = setup(RouterState.Minimal);
+        actions
+          .pipe(
+            filter(onlyRouterActions),
+            // wait until NavigationEnd router event
+            filter(
+              ({ payload }) =>
+                !!(payload.event as NavigationEnd).urlAfterRedirects
+            )
+          )
+          .subscribe(({ payload }: any) => {
+            expect(payload.event instanceof RouterEvent).toBe(false);
+            expect(payload.event).toEqual({
+              id: 1,
+              url: '/redirect',
+              urlAfterRedirects: '/next',
+            });
+            done();
+          });
+
+        router.navigateByUrl('/redirect');
       });
 
       it('should use the minimal router serializer', () => {

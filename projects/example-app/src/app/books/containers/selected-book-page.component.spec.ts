@@ -1,8 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
-import { MatCardModule } from '@angular/material';
-import { Store } from '@ngrx/store';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
 
 import { SelectedBookPageActions } from '@example-app/books/actions';
@@ -12,17 +10,17 @@ import {
 } from '@example-app/books/components';
 import { SelectedBookPageComponent } from '@example-app/books/containers';
 import { Book, generateMockBook } from '@example-app/books/models';
-import * as fromBooks from '@example-app/books/reducers';
 import { AddCommasPipe } from '@example-app/shared/pipes/add-commas.pipe';
+import { MaterialModule } from '@example-app/material';
 
 describe('Selected Book Page', () => {
   let fixture: ComponentFixture<SelectedBookPageComponent>;
-  let store: MockStore<fromBooks.State>;
+  let store: MockStore;
   let instance: SelectedBookPageComponent;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, MatCardModule],
+      imports: [NoopAnimationsModule, MaterialModule],
       declarations: [
         SelectedBookPageComponent,
         BookDetailComponent,
@@ -34,9 +32,9 @@ describe('Selected Book Page', () => {
 
     fixture = TestBed.createComponent(SelectedBookPageComponent);
     instance = fixture.componentInstance;
-    store = TestBed.get(Store);
+    store = TestBed.inject(MockStore);
 
-    spyOn(store, 'dispatch');
+    jest.spyOn(store, 'dispatch');
   });
 
   it('should compile', () => {
